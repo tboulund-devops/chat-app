@@ -83,9 +83,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
       - run: dotnet restore
       - run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=TestResults/coverage.xml
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: server/TestResults/coverage.xml
   
   report:
     permissions:
@@ -106,12 +110,18 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: server/TestResults
+
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
       - name: Generate coverage report
         run: |
           reportgenerator \
-          -reports:TestResults/**/coverage.xml \
+          -reports:TestResults/coverage.xml \
           -targetdir:coverage-report \
           -reporttypes:SonarQube
 
