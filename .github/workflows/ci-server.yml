@@ -84,9 +84,9 @@ jobs:
           dotnet-version: '10.0.x'
 
       - run: dotnet restore
-      - run: dotnet test -c Release `
-                /p:CollectCoverage=true `
-                /p:CoverletOutputFormat=cobertura `
+      - run: dotnet test -c Release \
+              /p:CollectCoverage=true \
+                /p:CoverletOutputFormat=cobertura \
                 /p:CoverletOutput=TestResults/coverage.xml
   
   report:
