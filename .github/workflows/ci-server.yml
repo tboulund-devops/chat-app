@@ -111,7 +111,7 @@ jobs:
       - name: Generate coverage report
         run: |
           reportgenerator \
-          -reports:TestResults/**/coverage.cobertura.xml \
+          -reports:TestResults/**/coverage.xml \
           -targetdir:coverage-report \
           -reporttypes:SonarQube
 
