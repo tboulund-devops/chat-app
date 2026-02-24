@@ -63,8 +63,8 @@ jobs:
         with:
           name: coverage
           path: |
-            ./Tests/Integration/bin/Release/**/TestResults/Integration/Coverage/coverage.cobertura.xml
-            ./Tests/Unit/bin/Release/**/TestResults/Unit/Coverage/coverage.cobertura.xml
+            ./Tests/Integration/bin/Release/net10.0/TestResults/Integration/Coverage/coverage.cobertura.xml
+            ./Tests/Unit/bin/Release/net10.0/TestResults/Unit/Coverage/coverage.cobertura.xml
 
   report:
     name: Generate Coverage Report
