@@ -35,7 +35,7 @@ jobs:
           dotnet sonarscanner begin \
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            /d:sonar.token=${{ secrets.SERVER_TOKEN }} \
+            /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
             /d:sonar.coverageReportPaths="coverage-report/SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
@@ -140,4 +140,4 @@ jobs:
           
       - name: Complete Static Code Analysis
         run: |
-          dotnet sonarscanner end /d:sonar.token=${{ secrets.SERVER_TOKEN }}
+          dotnet sonarscanner end /d:sonar.token=${{ secrets.SONAR_TOKEN }}
