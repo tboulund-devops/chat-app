@@ -82,7 +82,7 @@ jobs:
         
       - name: Run tests with coverage
         run: |
-          dotnet tool install dotnet-reportgenerator-globaltool
+          dotnet tool -g install dotnet-reportgenerator-globaltool
           echo "Running dotnet test with coverage..."
           dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
       - name: List TestResults directory for debug
