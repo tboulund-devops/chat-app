@@ -72,9 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: |
-            ./server/Coverage/Unit/coverage.cobertura.xml
-            ./server/Coverage/Integration/coverage.cobertura.xml
+          path: ./server/Coverage/
 
   report:
     name: Generate Coverage Report
@@ -93,6 +91,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
+      
+      - name: Display structure of downloaded artifacts
+        run: |
+          echo "Listing root directory after download:"
+          ls -lR ./
+          echo "Listing server directory after download:"
+          ls -lR ./server
+          echo "Listing Coverage directory after download:"
+          ls -lR ./server/Coverage
 
       - name: Debug downloaded coverage files
         run: |
