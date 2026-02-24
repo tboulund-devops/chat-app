@@ -64,10 +64,10 @@ jobs:
           mkdir -p Coverage/Integration
           # Copy the Unit test coverage file
           cp $(find ./Tests/Unit/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml") Coverage/Unit/
-          find ./Tests/Unit/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml"
+          find ./Coverage/Unit -name "coverage.cobertura.xml"
           # Copy the Integration test coverage file
           cp $(find ./Tests/Integration/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml") Coverage/Integration/
-          find ./Tests/Integration/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml"
+          find ./Coverage/Integration -name "coverage.cobertura.xml"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
