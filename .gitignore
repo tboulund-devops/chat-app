@@ -438,7 +438,7 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 .idea/
-
+.sonarqube/
 ##
 ## Visual studio for Mac
 ##

@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    name: SonarQube
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -50,6 +51,8 @@ jobs:
       run:
         working-directory: server
 
+    needs: sonarqube
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -69,6 +72,8 @@ jobs:
       run:
         working-directory: server
 
+    needs: build
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -76,7 +81,12 @@ jobs:
           dotnet-version: '10.0.x'
 
       - run: dotnet restore
-      - run: dotnet test -c Release --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
+      - run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=TestResults/coverage.xml
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: server/TestResults/coverage.xml
   
   report:
     permissions:
@@ -87,20 +97,30 @@ jobs:
     defaults:
       run:
         working-directory: server
-        
+
+    needs: test
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          
-      - name: Generate Report
-      - run: |
+
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: server/TestResults
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      - name: Generate coverage report
+        run: |
           reportgenerator \
-          -reports:TestResults/**/coverage.cobertura.xml \
+          -reports:TestResults/coverage.xml \
           -targetdir:coverage-report \
           -reporttypes:SonarQube
-          
+
   completeAnalysis:
     permissions:
       contents: read
@@ -110,7 +130,9 @@ jobs:
     defaults:
       run:
         working-directory: server
-        
+
+    needs: report
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -118,6 +140,6 @@ jobs:
           dotnet-version: '10.0.x'
           
       - name: Complete Static Code Analysis
-      - run: |
+        run: |
           dotnet sonarscanner end \
           /d:sonar.token= ${{ secrets.SERVER_TOKEN }}
