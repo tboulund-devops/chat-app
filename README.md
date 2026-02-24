@@ -40,7 +40,7 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 
 ### Week 8
 **Feature 1:** Frontend UI
-**Feature 2:** [...]
+**Feature 2:** Chat SSE
 
 ### Week 9
 **Feature 1:** [...]
