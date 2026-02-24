@@ -1,11 +1,12 @@
 name: ci-server
+
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'server/**'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'server/**'
 
@@ -80,11 +81,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
           name: coverage
-      
+
       - name: Test Downloaded Files
         run: |
           echo "Contents of Coverage directory:"
@@ -93,12 +98,22 @@ jobs:
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
+      - name: Create Coverage Report Directory
+        run: mkdir -p CoverageReport
+
       - name: Generate coverage report for SonarQube
         run: |
           reportgenerator \
-            -reports:"./server/Coverage/**/coverage.cobertura.xml" \
-            -targetdir:./server/CoverageReport \
+            -reports:"Integration/coverage.cobertura.xml;Unit/coverage.cobertura.xml" \
+            -targetdir:CoverageReport \
             -reporttypes:SonarQube
+
+      - name: Upload SonarQube Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-report
+          path: CoverageReport/SonarQube.xml
+          overwrite: true 
 
   sonarqube:
     name: Run SonarQube Analysis
@@ -108,10 +123,14 @@ jobs:
         working-directory: server
     needs: report
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Download SonarQube report
+        uses: actions/download-artifact@v4
+        with:
+          name: sonar-report
 
       - name: Install SonarScanner
         run: dotnet tool install -g dotnet-sonarscanner
@@ -122,7 +141,7 @@ jobs:
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
-            /d:sonar.coverageReportPaths="./server/CoverageReport/SonarQube.xml" \
+            /d:sonar.coverageReportPaths="CoverageReport/SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
