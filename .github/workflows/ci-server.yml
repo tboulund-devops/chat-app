@@ -74,8 +74,8 @@ jobs:
         with:
           name: coverage
           path: |
-            ./Integration/coverage.cobertura.xml
-            ./Unit/coverage.cobertura.xml
+            Coverage/Integration/coverage.cobertura.xml
+            Coverage/Unit/coverage.cobertura.xml
 
   report:
     name: Generate Coverage Report
