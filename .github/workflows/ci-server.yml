@@ -73,37 +73,23 @@ jobs:
         with:
           name: coverage
           path: ./server/Coverage/
+          overwrite: true
 
   report:
     name: Generate Coverage Report
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
     needs: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
           name: coverage
       
-      - name: Display structure of downloaded artifacts
+      - name: Test Downloaded Files
         run: |
-          echo "Listing root directory after download:"
+          echo "Contents of Coverage directory:"
           ls -lR
 
-      - name: Debug downloaded coverage files
-        run: |
-          echo "Listing Coverage directory:"
-          ls -lR ./server/Coverage
-          echo "Showing contents of found coverage.cobertura.xml files:"
-          find ./server/Coverage -name "coverage.cobertura.xml" -exec cat {} \; || echo "No coverage files found"
-            
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
