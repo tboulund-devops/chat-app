@@ -61,10 +61,11 @@ jobs:
       - run: dotnet build -c Release --no-restore
 
   test:
+    name: Test Server With Coverage
+
     permissions:
       contents: read
       pull-requests: write
-    name: Test Server
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,24 +83,26 @@ jobs:
         
       - name: Run tests with coverage
         run: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool
           echo "Running dotnet test with coverage..."
-          dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
-      - name: List TestResults directory for debug
+          dotnet test \
+            --configuration Release \
+            --coverage \
+            --coverage-output ./Coverage/coverage.cobertura.xml \
+            --coverage-output-format cobertura
+      - name: List Coverage directory for debug
         run: |
-          echo "Listing TestResults contents:"
-          ls -l TestResults || true
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: TestResults/**/coverage.cobertura.xml
-  
+          echo "Listing Coverage contents:"
+          find . -type f -iname "*coverage.cobertura.*"
+        name: coverage
+        path: |
+          ./Tests/Unit/bin/Release/**/coverage.cobertura.xml
+          ./Tests/Integration/bin/Release/**/coverage.cobertura.xml
   report:
+    name: Report Server Coverage
+
     permissions:
       contents: read
       pull-requests: write
-    name: Report Server Coverage
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -117,13 +120,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
-          path: TestResults
+          path: Coverage
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
       - name: Generate coverage report
         run: |
-          reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:coverage-report -reporttypes:SonarQube
+          reportgenerator -reports:"Coverage/**/coverage.cobertura.xml" -targetdir:coverage-report -reporttypes:SonarQube
 
 
   completeAnalysis:
