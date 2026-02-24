@@ -57,14 +57,18 @@ jobs:
             --coverage \
             --coverage-output ./Integration/Coverage/coverage.cobertura.xml \
             --coverage-output-format cobertura
+
       - name: Copy coverage to fixed folder
         run: |
           mkdir -p Coverage/Unit
           mkdir -p Coverage/Integration
           # Copy the Unit test coverage file
           cp $(find ./Tests/Unit/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml") Coverage/Unit/
+          find ./Tests/Unit/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml"
           # Copy the Integration test coverage file
           cp $(find ./Tests/Integration/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml") Coverage/Integration/
+          find ./Tests/Integration/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml"
+
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
         with:
