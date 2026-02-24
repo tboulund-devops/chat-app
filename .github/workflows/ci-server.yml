@@ -75,7 +75,6 @@ jobs:
           path: |
             ./server/Coverage/Unit/coverage.cobertura.xml
             ./server/Coverage/Integration/coverage.cobertura.xml
-          # No leading ./server/ — paths are relative to working-directory: server
 
   report:
     name: Generate Coverage Report
@@ -94,7 +93,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
-          path: Coverage  # Downloads directly into server/Coverage/ (Unit/ and Integration/ subfolders preserved)
+          path: ./server/Coverage 
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -102,8 +101,8 @@ jobs:
       - name: Generate coverage report for SonarQube
         run: |
           reportgenerator \
-            -reports:"Coverage/**/coverage.cobertura.xml" \
-            -targetdir:CoverageReport \
+            -reports:"./server/Coverage/**/coverage.cobertura.xml" \
+            -targetdir:./server/CoverageReport \
             -reporttypes:SonarQube
 
   sonarqube:
@@ -128,7 +127,7 @@ jobs:
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
-            /d:sonar.coverageReportPaths="CoverageReport/SonarQube.xml" \
+            /d:sonar.coverageReportPaths="./server/CoverageReport/SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
