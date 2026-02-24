@@ -29,7 +29,6 @@ jobs:
       - name: Install SonarQube Tools
         run: |
           dotnet tool install -g dotnet-sonarscanner
-          dotnet tool install -g dotnet-reportgenerator-globaltool
       - name: Start Static Code Analysis
         run: |
           dotnet sonarscanner begin \
@@ -80,14 +79,12 @@ jobs:
           dotnet-version: '10.0.x'
 
       - run: dotnet restore
+        
       - name: Run tests with coverage
         run: |
+          dotnet tool install dotnet-reportgenerator-globaltool
           echo "Running dotnet test with coverage..."
-          dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=TestResults/coverage.xml
-      - name: List all files recursively for debug
-        run: |
-          echo "Listing all files under server after test run:"
-          find . -type f | sort
+          dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
       - name: List TestResults directory for debug
         run: |
           echo "Listing TestResults contents:"
@@ -96,7 +93,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: TestResults/coverage.xml
+          path: TestResults/**/coverage.cobertura.xml
   
   report:
     permissions:
@@ -126,10 +123,8 @@ jobs:
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
       - name: Generate coverage report
         run: |
-          reportgenerator \
-          -reports:TestResults/coverage.xml \
-          -targetdir:coverage-report \
-          -reporttypes:SonarQube
+          reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:coverage-report -reporttypes:SonarQube
+
 
   completeAnalysis:
     permissions:
