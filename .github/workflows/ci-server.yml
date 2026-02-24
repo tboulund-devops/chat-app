@@ -26,7 +26,7 @@ jobs:
       - run: dotnet build -c Release --no-restore
 
   test:
-    name: Run Tests and Collect Coverage
+    name: Run Tests and Upload SonarQube Coverage Report
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,6 +38,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - run: dotnet restore
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
       - name: Run Unit and Integration Tests with Coverage
         run: |
@@ -68,16 +71,22 @@ jobs:
           ls -la Coverage/Integration/
           cat Coverage/Unit/coverage.cobertura.xml || echo "Unit coverage file missing!"
           cat Coverage/Integration/coverage.cobertura.xml || echo "Integration coverage file missing!"
+      - name: Generate coverage report
+        run: |
+          reportgenerator \
+            -reports:"Coverage/Unit/coverage.cobertura.xml;Coverage/Integration/coverage.cobertura.xml" \
+            -targetdir:Coverage/Report \
+            -reporttypes:SonarQube
 
-      - name: Upload Coverage Artifacts
+      - name: Upload SonarQube Coverage Report as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
-          path: ./server/Coverage/
+          name: sonar-coverage
+          path: ./server/Coverage/Report/SonarQube.xml
           overwrite: true
 
-  report:
-    name: Generate Coverage Report
+  sonarqube:
+    name: Run SonarQube Analysis
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -89,56 +98,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage
-
-      - name: Test Downloaded Files
-        run: |
-          echo "Contents of Coverage directory:"
-          ls -lR
-
-      - name: Restore 
-        run: dotnet restore
-        
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Create Coverage Report Directory
-        run: mkdir -p CoverageReport
-
-      - name: Generate coverage report for SonarQube
-        run: |
-          reportgenerator \
-            -reports:"Integration/coverage.cobertura.xml;Unit/coverage.cobertura.xml" \
-            -targetdir:CoverageReport \
-            -reporttypes:SonarQube
-
-      - name: Upload SonarQube Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: sonar-report
-          path: CoverageReport/SonarQube.xml
-          overwrite: true 
-
-  sonarqube:
-    name: Run SonarQube Analysis
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
-    needs: report
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
       - name: Download SonarQube report
         uses: actions/download-artifact@v4
         with:
-          name: sonar-report
+          name: sonar-coverage
+
+      - name: Debug Downloaded Files
+        run: |
+          echo "Contents of current directory:"
+          ls -lR
+          echo "Contents of Coverage/Report:"
+          ls -lR Coverage/Report
 
       - name: Install SonarScanner
         run: dotnet tool install -g dotnet-sonarscanner
@@ -149,7 +119,7 @@ jobs:
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
-            /d:sonar.coverageReportPaths="CoverageReport/SonarQube.xml" \
+            /d:sonar.coverageReportPaths="Coverage/Report/SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300
 
