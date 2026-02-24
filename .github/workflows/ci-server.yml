@@ -21,19 +21,18 @@ jobs:
       run:
         working-directory: server
 
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-dotnet@v4
-          with:
-            dotnet-version: '10.0.x'
-        - name: Install SonarQube Tools
-        - run: |
-            dotnet tool install -g dotnet-sonarscanner
-            dotnet tool install -g dotnet-reportgenerator-globaltool
-
-        - name: Start Static Code Analysis
-          run: |
-            dotnet sonarscanner begin \
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install SonarQube Tools
+        run: |
+          dotnet tool install -g dotnet-sonarscanner
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+      - name: Start Static Code Analysis
+        run: |
+          dotnet sonarscanner begin \
             /k:"IncidentTracker" \
             /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             /d:sonar.token=${{ secrets.SERVER_TOKEN }} \
@@ -141,5 +140,4 @@ jobs:
           
       - name: Complete Static Code Analysis
         run: |
-          dotnet sonarscanner end \
-          /d:sonar.token= ${{ secrets.SERVER_TOKEN }}
+          dotnet sonarscanner end /d:sonar.token=${{ secrets.SERVER_TOKEN }}
