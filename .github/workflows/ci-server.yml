@@ -88,9 +88,6 @@ jobs:
   sonarqube:
     name: Run SonarQube Analysis
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
     needs: test
     steps:
       - uses: actions/setup-dotnet@v4
