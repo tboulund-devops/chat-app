@@ -45,17 +45,17 @@ jobs:
       - name: Run Unit and Integration Tests with Coverage
         run: |
           echo "Running Unit Tests..."
-          dotnet test ./Tests/Unit/Unit.csproj \
+          dotnet test --project ./Tests/Unit/Unit.csproj \
             --configuration Release \
             --coverage \
-            --coverage-output ./Tests/Unit/bin/Release/Coverage/coverage.cobertura.xml \
+            --coverage-output ./Unit/Coverage/coverage.cobertura.xml \
             --coverage-output-format cobertura
 
           echo "Running Integration Tests..."
-          dotnet test ./Tests/Integration/Integration.csproj \
+          dotnet test --project ./Tests/Integration/Integration.csproj \
             --configuration Release \
             --coverage \
-            --coverage-output ./Tests/Integration/bin/Release/Coverage/coverage.cobertura.xml \
+            --coverage-output ./Integration/Coverage/coverage.cobertura.xml \
             --coverage-output-format cobertura
 
       - name: Upload Coverage Artifacts
