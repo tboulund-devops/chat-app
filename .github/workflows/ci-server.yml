@@ -11,66 +11,27 @@ on:
       - 'server/**'
 
 jobs:
-  sonarqube:
-    permissions:
-      contents: read
-      pull-requests: write
-    name: SonarQube
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - name: Install SonarQube Tools
-        run: |
-          dotnet tool install -g dotnet-sonarscanner
-      - name: Start Static Code Analysis
-        run: |
-          dotnet sonarscanner begin \
-            /k:"IncidentTracker" \
-            /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
-            /d:sonar.coverageReportPaths="coverage-report/SonarQube.xml" \
-            /d:sonar.qualitygate.wait=true \
-            /d:sonar.qualitygate.timeout=300
-          
   build:
-    permissions:
-      contents: read
-      pull-requests: write
     name: Build Server
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: server
 
-    needs: sonarqube
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
       - run: dotnet restore
       - run: dotnet build -c Release --no-restore
 
   test:
-    name: Test Server With Coverage
-
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Run Tests and Collect Coverage
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: server
-
     needs: build
 
     steps:
@@ -80,34 +41,37 @@ jobs:
           dotnet-version: '10.0.x'
 
       - run: dotnet restore
-        
-      - name: Run tests with coverage
+
+      - name: Run Unit and Integration Tests with Coverage
         run: |
-          echo "Running dotnet test with coverage..."
-          dotnet test \
+          echo "Running Unit Tests..."
+          dotnet test ./Tests/Unit/Unit.csproj \
             --configuration Release \
             --coverage \
-            --coverage-output ./Coverage/coverage.cobertura.xml \
+            --coverage-output ./Tests/Unit/bin/Release/Coverage/coverage.cobertura.xml \
             --coverage-output-format cobertura
-      - name: List Coverage directory for debug
-        run: |
-          echo "Listing Coverage contents:"
-          find . -type f -iname "*coverage.cobertura.*"
-        name: coverage
-        path: |
-          ./Tests/Unit/bin/Release/**/coverage.cobertura.xml
-          ./Tests/Integration/bin/Release/**/coverage.cobertura.xml
-  report:
-    name: Report Server Coverage
 
-    permissions:
-      contents: read
-      pull-requests: write
+          echo "Running Integration Tests..."
+          dotnet test ./Tests/Integration/Integration.csproj \
+            --configuration Release \
+            --coverage \
+            --coverage-output ./Tests/Integration/bin/Release/Coverage/coverage.cobertura.xml \
+            --coverage-output-format cobertura
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            ./Tests/Unit/bin/Release/**/coverage.cobertura.xml
+            ./Tests/Integration/bin/Release/**/coverage.cobertura.xml
+
+  report:
+    name: Generate Coverage Report
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: server
-
     needs: test
 
     steps:
@@ -116,7 +80,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Download coverage
+      - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
           name: coverage
@@ -124,21 +88,19 @@ jobs:
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
-      - name: Generate coverage report
+
+      - name: Generate coverage report for SonarQube
         run: |
-          reportgenerator -reports:"Coverage/**/coverage.cobertura.xml" -targetdir:coverage-report -reporttypes:SonarQube
+          reportgenerator -reports:"Coverage/**/coverage.cobertura.xml" \
+                          -targetdir:CoverageReport \
+                          -reporttypes:SonarQube
 
-
-  completeAnalysis:
-    permissions:
-      contents: read
-      pull-requests: write
-    name: Complete Analysis
+  sonarqube:
+    name: Run SonarQube Analysis
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: server
-
     needs: report
 
     steps:
@@ -146,7 +108,20 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          
-      - name: Complete Static Code Analysis
+
+      - name: Install SonarScanner
+        run: dotnet tool install -g dotnet-sonarscanner
+
+      - name: Start SonarQube Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"IncidentTracker" \
+            /d:sonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            /d:sonar.token=${{ secrets.SONAR_TOKEN }} \
+            /d:sonar.coverageReportPaths="CoverageReport/SonarQube.xml" \
+            /d:sonar.qualitygate.wait=true \
+            /d:sonar.qualitygate.timeout=300
+
+      - name: Complete SonarQube Analysis
         run: |
           dotnet sonarscanner end /d:sonar.token=${{ secrets.SONAR_TOKEN }}
