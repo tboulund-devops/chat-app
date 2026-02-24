@@ -73,8 +73,8 @@ jobs:
         with:
           name: coverage
           path: |
-            Coverage/Unit/coverage.cobertura.xml
-            Coverage/Integration/coverage.cobertura.xml
+            ./server/Coverage/Unit/coverage.cobertura.xml
+            ./server/Coverage/Integration/coverage.cobertura.xml
 
   report:
     name: Generate Coverage Report
@@ -95,6 +95,12 @@ jobs:
           name: coverage
           path: Coverage
 
+        run: |
+            echo "Listing Coverage directory:"
+            ls -lR Coverage
+            echo "Showing contents of found coverage.cobertura.xml files:"
+            find Coverage -name "coverage.cobertura.xml" -exec cat {} \; || echo "No coverage files found"
+            
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
