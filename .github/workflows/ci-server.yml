@@ -137,8 +137,8 @@ jobs:
           echo "=== Before build: Current directory contents ==="
           ls -laR .
           # Restore + build to ensure all sources are compiled & analyzed
-          dotnet restore --no-cache
-          dotnet build -c Release --no-restore --verbosity minimal
+          dotnet restore ./server --no-cache
+          dotnet build ./server -c Release --no-restore --verbosity minimal
 
       - name: Complete SonarQube Analysis
         env:
