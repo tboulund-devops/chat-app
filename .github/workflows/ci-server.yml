@@ -1,5 +1,4 @@
 name: ci-server
-
 on:
   push:
     branches: [ main, develop ]
@@ -17,7 +16,6 @@ jobs:
     defaults:
       run:
         working-directory: server
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -33,13 +31,11 @@ jobs:
       run:
         working-directory: server
     needs: build
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
       - run: dotnet restore
 
       - name: Run Unit and Integration Tests with Coverage
@@ -60,22 +56,26 @@ jobs:
 
       - name: Copy coverage to fixed folder
         run: |
-          mkdir -p Coverage/Unit
-          mkdir -p Coverage/Integration
-          # Copy the Unit test coverage file
-          cp $(find ./Tests/Unit/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml") Coverage/Unit/
-          find ./Coverage/Unit -name "coverage.cobertura.xml"
-          # Copy the Integration test coverage file
-          cp $(find ./Tests/Integration/bin/Release/net10.0/TestResults -name "coverage.cobertura.xml") Coverage/Integration/
-          find ./Coverage/Integration -name "coverage.cobertura.xml"
+          mkdir -p Coverage/Unit Coverage/Integration
+
+          # Robust copy: finds any coverage.cobertura.xml under TestResults (handles GUID folders)
+          find ./Tests/Unit -type f -name "coverage.cobertura.xml" -exec cp {} Coverage/Unit/coverage.cobertura.xml \;
+          find ./Tests/Integration -type f -name "coverage.cobertura.xml" -exec cp {} Coverage/Integration/coverage.cobertura.xml \;
+
+          # Debug: show what we actually copied
+          ls -la Coverage/Unit/
+          ls -la Coverage/Integration/
+          cat Coverage/Unit/coverage.cobertura.xml || echo "Unit coverage file missing!"
+          cat Coverage/Integration/coverage.cobertura.xml || echo "Integration coverage file missing!"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: |
-            ./server/Coverage/Integration/coverage.cobertura.xml
-            ./server/Coverage/Unit/coverage.cobertura.xml
+            Coverage/Unit/coverage.cobertura.xml
+            Coverage/Integration/coverage.cobertura.xml
+          # No leading ./server/ — paths are relative to working-directory: server
 
   report:
     name: Generate Coverage Report
@@ -84,7 +84,6 @@ jobs:
       run:
         working-directory: server
     needs: test
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -95,16 +94,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
-          path: server/Coverage
+          path: Coverage  # Downloads directly into server/Coverage/ (Unit/ and Integration/ subfolders preserved)
 
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
       - name: Generate coverage report for SonarQube
         run: |
-          reportgenerator -reports:"server/Coverage/**/coverage.cobertura.xml" \
-                          -targetdir:server/CoverageReport \
-                          -reporttypes:SonarQube
+          reportgenerator \
+            -reports:"Coverage/**/coverage.cobertura.xml" \
+            -targetdir:CoverageReport \
+            -reporttypes:SonarQube
 
   sonarqube:
     name: Run SonarQube Analysis
@@ -113,7 +113,6 @@ jobs:
       run:
         working-directory: server
     needs: report
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
