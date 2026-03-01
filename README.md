@@ -43,9 +43,9 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 **Feature 2:** Chat SSE
 
 ### Week 9
-**Feature 1:** [...]
+**Feature 1:** Create Chatroom
 
-**Feature 2:** [...]
+**Feature 2:** Join Chatroom
 
 ### Week 10
 **Feature 1:** [...]
