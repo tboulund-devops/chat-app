@@ -1,0 +1,35 @@
+services:
+  api:
+    image: ghcr.io/tboulund-devops/incidenttracker:${VERSION}
+    ports:
+      - "5005:5005"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Database__PSqlConnectionString=Host=db;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres
+      - Database__RedisConnectionString=redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=Incident_Tracker
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,109 @@
+name: cd-server-contabo pipeline
+
+on:
+  push:
+    branches: [ "release/*" ]
+    paths:
+      - "server/**"
+  workflow_dispatch: {}
+
+jobs:
+  delivery:
+    name: Deploy Server to STAGING (Contabo)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Application Version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          bump_each_commit: true
+
+      # Log in to GitHub Container Registry (GHCR)
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Build + Push Docker image
+      - name: Build & Push server image
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "Using image: $IMAGE"
+          
+          docker build \
+            -t "$IMAGE:staging" \
+            -t "$IMAGE:${{ steps.version.outputs.version }}" \
+            -f server/Dockerfile \
+            server
+          docker push "$IMAGE:staging"
+          docker push "$IMAGE:${{ steps.version.outputs.version }}"
+          
+      # Create GitHub Release
+      - name: Create release notes
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.version.outputs.version }}
+          generateReleaseNotes: true
+          allowUpdates: true
+          body: |
+            This release includes the following container image:
+            ghcr.io/${{ github.repository_owner }}/devopswebapplication:${{ steps.version.outputs.version }}
+          
+      - name: Deliver docker-compose to staging
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.STAGING_SERVER_IP }}
+          username: ${{ vars.STAGING_SERVER_USERNAME }}
+          key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
+          source: "server/docker-compose.yml"
+          target: "incidenttracker/server/"
+
+      - name: Run Docker Compose on staging server
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ vars.STAGING_SERVER_IP }}
+          username: ${{ vars.STAGING_SERVER_USERNAME }}
+          key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
+          script: |
+            cd incidenttracker/server
+            docker compose -f docker-compose.contabo.yml pull
+            docker compose -f docker-compose.contabo.yml up -d
+            docker compose -f docker-compose.contabo.yml ps
+
+  deployment:
+    name: Deploy Server to PRODUCTION (Contabo)
+    runs-on: ubuntu-latest
+    needs: delivery
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deliver docker-compose to production
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.PROD_SERVER_IP }}
+          username: ${{ vars.PROD_SERVER_USERNAME }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          source: "server/docker-compose.prod.yml"
+          target: "incidenttracker/server/"
+
+      - name: Deploy production
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ vars.PROD_SERVER_IP }}
+          username: ${{ vars.PROD_SERVER_USERNAME }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd incidenttracker/server
+            export VERSION="0.0.1"
+            docker compose -f docker-compose.contabo.prod.yml pull
+            docker compose -f docker-compose.contabo.prod.yml up -d
+            docker compose -f docker-compose.contabo.prod.yml ps
