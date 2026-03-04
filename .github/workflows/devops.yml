@@ -7,6 +7,10 @@ on:
       - "server/**"
   workflow_dispatch: {}
 
+permissions:
+  packages: write
+  contents: write
+
 jobs:
   delivery:
     name: Deploy Server to STAGING (Contabo)
@@ -22,29 +26,27 @@ jobs:
         with:
           bump_each_commit: true
 
-      # Log in to GitHub Container Registry (GHCR)
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
-      # Build + Push Docker image
+
       - name: Build & Push server image
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
           echo "Using image: $IMAGE"
-          
+
           docker build \
             -t "$IMAGE:staging" \
             -t "$IMAGE:${{ steps.version.outputs.version }}" \
             -f server/Dockerfile \
             server
+
           docker push "$IMAGE:staging"
           docker push "$IMAGE:${{ steps.version.outputs.version }}"
-          
-      # Create GitHub Release
+
       - name: Create release notes
         uses: ncipollo/release-action@v1
         with:
@@ -53,15 +55,15 @@ jobs:
           allowUpdates: true
           body: |
             This release includes the following container image:
-            ghcr.io/${{ github.repository_owner }}/devopswebapplication:${{ steps.version.outputs.version }}
-          
+            ghcr.io/${{ github.repository_owner }}/incidenttracker:${{ steps.version.outputs.version }}
+
       - name: Deliver docker-compose to staging
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.STAGING_SERVER_IP }}
           username: ${{ vars.STAGING_SERVER_USERNAME }}
           key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
-          source: "server/docker-compose.yml"
+          source: "server/docker-compose.contabo.yml"
           target: "incidenttracker/server/"
 
       - name: Run Docker Compose on staging server
@@ -92,7 +94,7 @@ jobs:
           host: ${{ vars.PROD_SERVER_IP }}
           username: ${{ vars.PROD_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SERVER_SSH_KEY }}
-          source: "server/docker-compose.prod.yml"
+          source: "server/docker-compose.contabo.prod.yml"
           target: "incidenttracker/server/"
 
       - name: Deploy production
