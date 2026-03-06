@@ -39,7 +39,7 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 *Winter vacation - nothing planned.*
 
 ### Week 8
-**Feature 1:** Frontend UI
+**Feature 1:** Frontend UI framework 
 **Feature 2:** Chat SSE
 
 ### Week 9
@@ -48,9 +48,9 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 **Feature 2:** Join Chatroom
 
 ### Week 10
-**Feature 1:** [...]
+**Feature 1:** UI-Login page
 
-**Feature 2:** [...]
+**Feature 2:** UI-dashboard and chat room pages
 
 ### Week 11
 **Feature 1:** [...]

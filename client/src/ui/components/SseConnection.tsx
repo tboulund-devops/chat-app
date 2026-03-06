@@ -1,7 +1,7 @@
-import { authAtom } from "@core/atoms/authAtom";
-import { useSse } from "@utils/useSse";
+import { authAtom } from "../../core/atoms/authAtom";
+import { useSse } from "../../core/hooks/useSse";
 import { useAtom } from "jotai";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const SseConnection: React.FC = () => {
 const [auth] = useAtom(authAtom);
@@ -28,7 +28,7 @@ const [auth] = useAtom(authAtom);
 
   return (
     <div>
-      <h2>Live SSE Messages {sse.status}</h2>
+
     </div>
   );
 };
