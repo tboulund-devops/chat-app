@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\Api\Api.csproj" />
+    <Content Include="Config/Json/appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
