@@ -24,7 +24,7 @@ public class RegisterUserHandlerTests
     private static RegisterUserCommand MakeCommand(string email = "test@test.com") => new()
     {
         FirstName = "John",
-        LastName = "Doey",
+        LastName = "Doe",
         Email = email,
         Password = "Password1!",
         Role = RoleType.User

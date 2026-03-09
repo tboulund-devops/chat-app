@@ -44,6 +44,7 @@ jobs:
 
       - name: Create appsettings.json for Integration Tests
         run: |
+          mkdir -p server/Tests/Integration/Config/Json
           cat > server/Tests/Integration/Config/Json/appsettings.json << 'EOF'
           {
             "Jwt": {
