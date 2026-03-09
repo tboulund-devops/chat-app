@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "testcafe opera src/tests/e2e/**/*.js",
+    "test:e2e:headless": "testcafe opera:headless src/tests/e2e/**/*.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
@@ -32,6 +34,7 @@
     "testcafe": "^3.7.4",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wait-on": "^9.0.4"
   }
 }

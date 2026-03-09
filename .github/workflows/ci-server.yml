@@ -24,6 +24,47 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore
       - run: dotnet build -c Release --no-restore
+        
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Setup .NET (for backup)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          
+      - name: Start Server
+        run: dotnet run --project Src/Api/ &
+        env:
+          ASPNETCORE_URLS: http://localhost:5285
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with: 
+          node-version: '18'
+          
+      - name: Install client dependencies
+        run: npm install
+        working-directory: client
+        
+      - name: Start React Frontend
+        run: npm run dev &
+        working-directory: client
+        
+      - name: Wair for server to start
+        run: |
+          npx wait-on http://localhost:5173
+          npx wait-on http://localhost:5285
+          
+      - name: Run E2E Tests
+        run: npm run test:e2e:headless
+        working-directory: client
 
   test:
     name: Run Tests and Upload SonarQube Coverage Report
