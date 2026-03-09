@@ -1,5 +1,6 @@
-import { ChatRoom } from "@core/atoms/chatAtoms";
-import { api } from "@utils/api";
+import type { ChatRoom } from '../types/ChatRoom'
+import type { ChatMessage } from '../types/ChatMessage'
+import { api } from "../../utils/api";
 
 const endpoint = '/api/chat';
 
@@ -57,5 +58,10 @@ export const chatApi = {
   },
   leaveRoom: async (roomId: string) => {
     return api(`/api/chat/rooms/${roomId}/leave`, { init: { method: "POST" }});
-  }
+  },
+
+  getRoomMessages: async (roomId: string): Promise<ChatMessage[]> => {
+    const result = await api<any>(`${endpoint}/rooms/${roomId}/messages`)
+    return (result?.dto ?? result) as ChatMessage[]
+  },
 };

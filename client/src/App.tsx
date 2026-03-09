@@ -1,52 +1,25 @@
-
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import LoginPage from './ui/pages/LoginPage';
-import HomePage from './ui/pages/HomePage';
-import { useSse } from './utils/useSse';
-import Layout from './ui/pages/Layout';
-import { useEffect } from 'react';
-import { useAtom } from 'jotai';
-import { authAtom } from '@core/atoms/authAtom';
-import { api } from '@utils/api';
-import { User } from '@core/types/User';
-import { authApi } from '@core/controllers/authApi';
-// import './App.css';
-
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import Shell from '../src/ui/layout/Shell'
+import Login from '../src/ui/pages/Login'
+import Rooms from '../src/ui/pages/Rooms'
+import Dms from '../src/ui/pages/Dms'
+import RoomChat from '../src/ui/pages/RoomChat'
 
 const router = createBrowserRouter([
+  { path: '/login', element: <Login /> },
   {
     path: '/',
-    element: <Layout />,
+    element: <Shell />,
     children: [
-      {
-        path: '/',
-        element: <HomePage />,
-      },
+      { index: true, element: <Navigate to="/rooms" replace /> },
+      { path: 'rooms', element: <Rooms /> },
+      { path: 'dms', element: <Dms /> },
+      { path: 'rooms/:roomId', element: <RoomChat /> },
     ],
   },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-]);
+  { path: '*', element: <Navigate to="/" replace /> },
+])
 
-function App() {
-  const [, setAuth] = useAtom(authAtom)
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await authApi.me();
-        setAuth({ status: "authenticated", user: user });
-      } catch {
-        setAuth({ status: "unauthenticated" })
-      }
-    }
-
-    checkAuth()
-  }, []);
-  
-  return <RouterProvider router={router} />;
+export default function App() {
+  return <RouterProvider router={router} />
 }
-
-export default App;
