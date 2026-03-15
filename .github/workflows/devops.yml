@@ -1,27 +1,24 @@
-name: cd-server-contabo pipeline
+name: DevOps Pipeline
 
 on:
   push:
-    branches: [ "release/*" ]
-    paths:
-      - "server/**"
+    branches:
+      - release/contabo
   workflow_dispatch: {}
-
-permissions:
-  packages: write
-  contents: write
 
 jobs:
   delivery:
-    name: Deploy Server to STAGING (Contabo)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Application Version
-        id: version
+        id: semver-app
         uses: paulhatch/semantic-version@v5.4.0
         with:
           bump_each_commit: true
@@ -33,38 +30,67 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push server image
+      - name: Set image names
         run: |
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
-          echo "Using image: $IMAGE"
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LC=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+
+          echo "OWNER_LC=$OWNER_LC" >> $GITHUB_ENV
+          echo "REPO_LC=$REPO_LC" >> $GITHUB_ENV
+
+          echo "SERVER_IMAGE=ghcr.io/$OWNER_LC/$REPO_LC-server" >> $GITHUB_ENV
+          echo "CLIENT_IMAGE=ghcr.io/$OWNER_LC/$REPO_LC-client" >> $GITHUB_ENV
+
+      - name: Build server image
+        run: |
+          echo "Using server image: $SERVER_IMAGE"
 
           docker build \
-            -t "$IMAGE:staging" \
-            -t "$IMAGE:${{ steps.version.outputs.version }}" \
+            -t "$SERVER_IMAGE:staging" \
+            -t "$SERVER_IMAGE:${{ steps.semver-app.outputs.version }}" \
             -f server/Dockerfile \
             server
 
-          docker push "$IMAGE:staging"
-          docker push "$IMAGE:${{ steps.version.outputs.version }}"
+      - name: Build client image
+        run: |
+          echo "Using client image: $CLIENT_IMAGE"
+
+          docker build \
+            -t "$CLIENT_IMAGE:staging" \
+            -t "$CLIENT_IMAGE:${{ steps.semver-app.outputs.version }}" \
+            -f client/Dockerfile \
+            client
+
+      - name: Push server image
+        run: |
+          docker push "$SERVER_IMAGE:staging"
+          docker push "$SERVER_IMAGE:${{ steps.semver-app.outputs.version }}"
+
+      - name: Push client image
+        run: |
+          docker push "$CLIENT_IMAGE:staging"
+          docker push "$CLIENT_IMAGE:${{ steps.semver-app.outputs.version }}"
 
       - name: Create release notes
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.version.outputs.version }}
+          tag: ${{ steps.semver-app.outputs.version }}
           generateReleaseNotes: true
           allowUpdates: true
           body: |
-            This release includes the following container image:
-            ghcr.io/${{ github.repository_owner }}/incidenttracker:${{ steps.version.outputs.version }}
+            This release includes the following container images:
+            ${{ env.SERVER_IMAGE }}:${{ steps.semver-app.outputs.version }}
+            ${{ env.CLIENT_IMAGE }}:${{ steps.semver-app.outputs.version }}
 
-      - name: Deliver docker-compose to staging
+      - name: Deliver Docker Compose file to staging
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.STAGING_SERVER_IP }}
           username: ${{ vars.STAGING_SERVER_USERNAME }}
           key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
-          source: "server/docker-compose.contabo.yml"
-          target: "incidenttracker/server/"
+          source: "server/docker-compose.staging.yml"
+          target: "incidenttracker/"
+          strip_components: 1
 
       - name: Run Docker Compose on staging server
         uses: appleboy/ssh-action@v1.2.1
@@ -73,39 +99,37 @@ jobs:
           username: ${{ vars.STAGING_SERVER_USERNAME }}
           key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
           script: |
-            cd incidenttracker/server
-            docker compose -f docker-compose.contabo.yml pull
-            docker compose -f docker-compose.contabo.yml up -d
-            docker compose -f docker-compose.contabo.yml ps
+            cd incidenttracker
+            docker compose -f docker-compose.staging.yml pull
+            docker compose -f docker-compose.staging.yml up -d
 
-  deployment:
-    name: Deploy Server to PRODUCTION (Contabo)
+  production_deployment:
+    name: Deploy to Production
     runs-on: ubuntu-latest
     needs: delivery
-    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deliver docker-compose to production
+      - name: Deliver Docker Compose file to production
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.PROD_SERVER_IP }}
           username: ${{ vars.PROD_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SERVER_SSH_KEY }}
-          source: "server/docker-compose.contabo.prod.yml"
-          target: "incidenttracker/server/"
+          source: "server/docker-compose.prod.yml"
+          target: "incidenttracker/"
+          strip_components: 1
 
-      - name: Deploy production
+      - name: Run Docker Compose on production server
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ vars.PROD_SERVER_IP }}
           username: ${{ vars.PROD_SERVER_USERNAME }}
           key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          port: 22
           script: |
-            cd incidenttracker/server
-            export VERSION="0.0.1"
-            docker compose -f docker-compose.contabo.prod.yml pull
-            docker compose -f docker-compose.contabo.prod.yml up -d
-            docker compose -f docker-compose.contabo.prod.yml ps
+            cd incidenttracker
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d

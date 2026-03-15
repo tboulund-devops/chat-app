@@ -1,10 +1,11 @@
 services:
   api:
-    image: ghcr.io/tboulund-devops/incidenttracker:${VERSION}
+    image: ghcr.io/tboulund-devops/incidenttracker-server:staging
+    container_name: incidenttracker-api
     ports:
       - "5005:5005"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Staging
       - Database__PSqlConnectionString=Host=db;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres
       - Database__RedisConnectionString=redis:6379
     depends_on:
@@ -12,12 +13,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  client:
+    image: ghcr.io/tboulund-devops/incidenttracker-client:staging
+    container_name: incidenttracker-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
   db:
     image: postgres:17-alpine
+    container_name: incidenttracker-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=Incident_Tracker
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -29,6 +42,9 @@ services:
 
   redis:
     image: redis:alpine
+    container_name: incidenttracker-redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:
