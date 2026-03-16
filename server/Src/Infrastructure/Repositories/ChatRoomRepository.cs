@@ -18,19 +18,40 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
         }
         catch (DbUpdateException e)
         {
+            throw new RepositoryException(e.InnerException?.Message ?? e.Message, e);
+        }
+    }
+
+    public async Task<bool> DeleteAsync(ChatRoom entity)
+    {
+        try
+        {
+            dbContext.ChatRooms.Remove(entity);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
             throw new RepositoryException(e.Message, e);
         }
     }
 
-    public Task<bool> DeleteAsync(ChatRoom entity)
+    public async Task<bool> DeleteAsync(Guid id)
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> DeleteAsync(Guid id)
-    {
-        throw new NotImplementedException();
-    }
+        try
+        {
+            var existing = dbContext.ChatRooms.FirstOrDefaultAsync(m => m.Id == id);
+            if (existing == null)
+                return false;
+        
+            dbContext.ChatRooms.Remove(await existing);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }    }
 
     public async Task<ChatRoom> FindByIdAsync(Guid id)
     {
@@ -40,9 +61,9 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
         return room ?? throw new EntityNotFoundException("Chat room not found");
     }
 
-    public Task<IEnumerable<ChatRoom>> GetAllAsync()
+    public async Task<IEnumerable<ChatRoom>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        return await dbContext.ChatRooms.ToListAsync();
     }
 
     public async Task<bool> UpdateAsync(ChatRoom entity)

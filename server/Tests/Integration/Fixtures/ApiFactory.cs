@@ -21,6 +21,18 @@ public sealed class ApiFactory : WebApplicationFactory<ApiMaker>, IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         await _postgres.StartAsync();
+    
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+    
+        // Log pending migrations so we can see if they're being applied
+        var pending = await db.Database.GetPendingMigrationsAsync();
+        Console.WriteLine($"[ApiFactory] Pending migrations: {string.Join(", ", pending)}");
+    
+        await db.Database.MigrateAsync();
+    
+        var applied = await db.Database.GetAppliedMigrationsAsync();
+        Console.WriteLine($"[ApiFactory] Applied migrations: {string.Join(", ", applied)}");
     }
 
     public new async ValueTask DisposeAsync()

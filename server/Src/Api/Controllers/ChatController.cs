@@ -282,4 +282,46 @@ public class ChatController(
     {
         throw new NotImplementedException();
     }
+    
+    public record EditMessageRequest(string NewContent);
+
+    /// <summary> Edit your own message </summary>
+    [HttpPatch("messages/{messageId:guid}")]
+    public async Task<IActionResult> EditMessage(Guid messageId, [FromBody] EditMessageRequest request)
+    {
+        try
+        {
+            var result = await chatFeature.EditMessageAsync(GetUserId(), messageId, request.NewContent);
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(result),
+                ResultStatus.Unauthorized => Forbid(),
+                _ => BadRequest(result)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+    }
+
+    ///<summary>Soft-delete your own message</summary>
+    [HttpDelete("messages/{messageId:guid}")]
+    public async Task<IActionResult> DeleteMessage(Guid messageId)
+    {
+        try
+        {
+            var result = await chatFeature.DeleteMessageAsync(GetUserId(), messageId);
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(result),
+                ResultStatus.Unauthorized => Forbid(),
+                _ => BadRequest(result)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+    }
 }

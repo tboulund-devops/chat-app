@@ -49,11 +49,11 @@ public class AuthFeature(LoginHandler loginHandler, RegisterUserHandler register
             user.RefreshToken = "";
             user.RefreshTokenExpires = DateTime.UtcNow;
             var isSuccess = await userRepository.UpdateAsync(user);
-            return isSuccess ? Result.Success() : Result.Failure("Failed to revoke refresh token");
+            return isSuccess ? Result.Success() : Result.Failure("Failed to revoke refresh token", ResultStatus.Failure);
         }
         catch (EntityNotFoundException e)
         {
-            return Result.Failure(e.Message);
+            return Result.Failure(e.Message, ResultStatus.NotFound);
         }
     }
 }

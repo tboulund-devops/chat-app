@@ -6,4 +6,5 @@ export type ChatMessage = {
     sender: User;
     content: string;
     createdAt: string;
+    isDeleted: boolean;
 };

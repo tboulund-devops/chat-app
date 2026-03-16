@@ -15,7 +15,7 @@ public class Result
     
     public static Result Success(string message = "Success")
         => new(ResultStatus.Success, message);
-    public static Result Failure(string message)
+    public static Result Failure(string message, ResultStatus status)
         => new(ResultStatus.Failure, message);
 }
 
