@@ -22,14 +22,36 @@ public class ChatMessageRepository(MyDbContext dbContext) : IChatMessageReposito
         }
     }
 
-    public Task<bool> DeleteAsync(ChatMessage entity)
+    public async Task<bool> DeleteAsync(ChatMessage entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            dbContext.ChatMessages.Remove(entity);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }
     }
 
-    public Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var existing = dbContext.ChatMessages.FirstOrDefaultAsync(m => m.Id == id);
+            if (existing == null)
+                return false;
+        
+            dbContext.ChatMessages.Remove(await existing);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }
     }
 
     public async Task<ChatMessage> FindByIdAsync(Guid id)
@@ -41,14 +63,27 @@ public class ChatMessageRepository(MyDbContext dbContext) : IChatMessageReposito
         return message ?? throw new EntityNotFoundException("Chat message not found");
     }
 
-    public Task<IEnumerable<ChatMessage>> GetAllAsync()
+    public async Task<IEnumerable<ChatMessage>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        return await dbContext.ChatMessages.ToListAsync();
     }
 
-    public Task<bool> UpdateAsync(ChatMessage entity)
+    public async Task<bool> UpdateAsync(ChatMessage entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var existing = dbContext.ChatMessages.FirstOrDefaultAsync(m => m.Id == entity.Id);
+            if(existing == null)
+                return false;
+        
+            dbContext.Entry(await existing).CurrentValues.SetValues(entity);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException($"Failed to update chat message: {e.Message}", e);
+        }
     }
 
     public async Task<IEnumerable<ChatMessage>> GetByRoomIdAsync(Guid roomId, int skip = 0, int take = 50)

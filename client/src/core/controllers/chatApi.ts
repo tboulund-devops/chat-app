@@ -64,4 +64,19 @@ export const chatApi = {
     const result = await api<any>(`${endpoint}/rooms/${roomId}/messages`)
     return (result?.dto ?? result) as ChatMessage[]
   },
+
+  editMessage: async (messageId: string, newContent: string): Promise<void> => {
+    await api(`${endpoint}/messages/${messageId}`, {
+      init: {
+        method: 'PATCH',
+        body: JSON.stringify({ newContent }),
+      },
+    })
+  },
+
+  deleteMessage: async (messageId: string): Promise<void> => {
+    await api(`${endpoint}/messages/${messageId}`, {
+      init: { method: 'DELETE' },
+    })
+  },
 };

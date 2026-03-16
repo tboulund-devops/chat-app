@@ -53,9 +53,9 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 **Feature 2:** UI-dashboard and chat room pages
 
 ### Week 11
-**Feature 1:** [...]
+**Feature 1:** Edit Chat Messages
 
-**Feature 2:** [...]
+**Feature 2:** Delete Chat Messages
 
 ### Week 12
 **Feature 1:** [...]

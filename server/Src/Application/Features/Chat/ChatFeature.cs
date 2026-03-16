@@ -78,9 +78,8 @@ public class ChatFeature(
         try
         {
             var room = ChatRoom.Create(request.Name, userId, request.Description);
-            
             await roomRepository.AddAsync(room);
-            
+            await roomRepository.AddMemberAsync(room.Id, userId);
             return Result<ChatRoomDto>.Success(ChatRoomDto.Map(room));
         }
         catch (RepositoryException ex)
@@ -113,7 +112,7 @@ public class ChatFeature(
             
             if (await roomRepository.IsMemberAsync(roomId, userId))
             {
-                return Result.Failure("You are already a member of this room");
+                return Result.Failure("You are already a member of this room", ResultStatus.Failure);
             }
 
             await roomRepository.AddMemberAsync(roomId, userId);
@@ -121,11 +120,11 @@ public class ChatFeature(
         }
         catch (EntityNotFoundException)
         {
-            return Result.Failure("Room not found");
+            return Result.Failure("Room not found", ResultStatus.NotFound);
         }
         catch (RepositoryException ex)
         {
-            return Result.Failure($"Failed to join room: {ex.Message}");
+            return Result.Failure($"Failed to join room: {ex.Message}", ResultStatus.Failure);
         }
     }
 
@@ -135,7 +134,7 @@ public class ChatFeature(
         {
             if (!await roomRepository.IsMemberAsync(roomId, userId))
             {
-                return Result.Failure("You are not a member of this room");
+                return Result.Failure("You are not a member of this room", ResultStatus.Unauthorized);
             }
 
             await roomRepository.RemoveMemberAsync(roomId, userId);
@@ -146,7 +145,7 @@ public class ChatFeature(
         }
         catch (RepositoryException ex)
         {
-            return Result.Failure($"Failed to leave room: {ex.Message}");
+            return Result.Failure($"Failed to leave room: {ex.Message}", ResultStatus.Failure);
         }
     }
 
@@ -155,5 +154,60 @@ public class ChatFeature(
         var rooms = await roomRepository.SearchRoomsByNameAsync(name);
         var roomsDto = rooms.Select(ChatRoomDto.Map).ToList();
         return roomsDto.Count == 0 ? Result<IEnumerable<ChatRoomDto>>.Failure("No rooms found") : Result<IEnumerable<ChatRoomDto>>.Success(roomsDto);
+    }
+
+    public async Task<Result> EditMessageAsync(Guid userId, Guid messageId, string newContent)
+    {
+        try
+        {
+            var message = await messageRepository.FindByIdAsync(messageId);
+            
+            if(message.SenderId != userId)
+                return Result.Failure("You are not allowed to edit this message", ResultStatus.Forbidden);
+            
+            if(message.IsDeleted)
+                return Result.Failure("Cannot edit a deleted message", ResultStatus.Unauthorized);
+
+            var updated = message with { Content = newContent };
+            await messageRepository.UpdateAsync(updated);
+            
+            return Result.Success();
+        }
+        catch (EntityNotFoundException e)
+        {
+            return Result.Failure(e.Message, ResultStatus.NotFound);
+        }
+        catch (RepositoryException e)
+        {
+            return Result.Failure($"Failed to edit message: {e.Message}", ResultStatus.Unauthorized);
+        }
+    }
+
+    public async Task<Result> DeleteMessageAsync(Guid userId, Guid messageId)
+    {
+        try
+        {
+            var message = await messageRepository.FindByIdAsync(messageId);
+
+            if (message.SenderId != userId)
+                return Result.Failure("You are not allowed to delete this message", ResultStatus.Forbidden);
+
+            var deleted = message with
+            {
+                Content = "This message was deleted",
+                IsDeleted = true
+            };
+            await messageRepository.UpdateAsync(deleted);
+            
+            return Result.Success();
+        }
+        catch (EntityNotFoundException e)
+        {
+            return Result.Failure(e.Message, ResultStatus.NotFound);
+        }
+        catch (RepositoryException e)
+        {
+            return Result.Failure($"Failed to delete message: {e.Message}", ResultStatus.Unauthorized);
+        }
     }
 }

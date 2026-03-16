@@ -19,7 +19,7 @@ public sealed class RegisterUserHandler(
             if (await userRepository.IsUserExistByEmailAsync(command.Email))
             {
                 
-                return Result.Failure("Email already in use.");
+                return Result.Failure("Email already in use.", ResultStatus.Failure);
             }
             
             hashingUtils.CreatePasswordHash(command.Password, out var passwordHash);
@@ -38,7 +38,7 @@ public sealed class RegisterUserHandler(
         }
         catch (RepositoryException e)
         {
-            return Result.Failure(e.Message);
+            return Result.Failure(e.Message, ResultStatus.Failure);
         }
     }
 }

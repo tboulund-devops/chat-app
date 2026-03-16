@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { DoorClosed } from 'lucide-react'
 import type { ChatRoom } from '../../core/types/ChatRoom'
 import type { ChatMessage } from '../../core/types/ChatMessage'
+import type { User } from '../../core/types/User'
 import { chatApi } from '../../core/controllers/chatApi'
+import { authApi } from '../../core/controllers/authApi'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
 import MembersPanel_seeder from './MembersPanel_seeder'
@@ -15,8 +17,13 @@ type Props = {
 export default function ChatWindow({ roomId, room }: Props) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [text, setText] = useState('')
+    const [currentUser, setCurrentUser] = useState<User | null>(null)
 
     const title = useMemo(() => room?.name ?? 'Room', [room])
+
+    useEffect(() => {
+        authApi.me().then(setCurrentUser).catch(console.error)
+    }, [])
 
     const loadMessages = async () => {
         try {
@@ -29,30 +36,17 @@ export default function ChatWindow({ roomId, room }: Props) {
 
     useEffect(() => {
         if (!roomId) return
-
         let cancelled = false
 
-        const fetchMessages = async () => {
-            try {
-                const data = await chatApi.getRoomMessages(roomId)
-                if (!cancelled) {
-                    setMessages(data)
-                }
-            } catch (error) {
-                console.error('Failed to load messages:', error)
-            }
-        }
+        chatApi.getRoomMessages(roomId)
+            .then(data => { if (!cancelled) setMessages(data) })
+            .catch(console.error)
 
-        fetchMessages()
-
-        return () => {
-            cancelled = true
-        }
+        return () => { cancelled = true }
     }, [roomId])
 
     const handleSend = async () => {
         if (!text.trim()) return
-
         try {
             await chatApi.sendMessage(roomId, text)
             setText('')
@@ -69,11 +63,15 @@ export default function ChatWindow({ roomId, room }: Props) {
                     <DoorClosed className="h-4 w-4 text-zinc-400" />
                     <h1 className="text-sm font-semibold text-zinc-900">{title}</h1>
                     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500">
-            {messages.length} messages
-          </span>
+                        {messages.length} messages
+                    </span>
                 </div>
 
-                <MessageList messages={messages} />
+                <MessageList
+                    messages={messages}
+                    currentUser={currentUser}
+                    onMessageChanged={loadMessages}
+                />
 
                 <MessageComposer
                     value={text}
