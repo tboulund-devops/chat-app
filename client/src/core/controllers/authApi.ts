@@ -1,5 +1,5 @@
-import { User } from "@core/types/User";
-import { api } from "@utils/api";
+import { User } from "../types/User";
+import { api } from "../../utils/api";
 
 const endpoint = "/api/auth";
 export const authApi = { 
