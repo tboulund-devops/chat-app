@@ -100,6 +100,9 @@ jobs:
           key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
           script: |
             cd incidenttracker
+            export DATABASE_USER="${{ vars.DATABASE_USER }}"
+            export DATABASE_PASSWORD="${{ vars.DATABASE_PASSWORD }}"
+            export DATABASE_DB="${{ vars.DATABASE_NAME }}"
             docker compose -f docker-compose.staging.yml pull
             docker compose -f docker-compose.staging.yml up -d
 
@@ -131,5 +134,8 @@ jobs:
           port: 22
           script: |
             cd incidenttracker
+            export DATABASE_USER="${{ vars.DATABASE_USER }}"
+            export DATABASE_PASSWORD="${{ vars.DATABASE_PASSWORD }}"
+            export DATABASE_DB="${{ vars.DATABASE_NAME }}"
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
