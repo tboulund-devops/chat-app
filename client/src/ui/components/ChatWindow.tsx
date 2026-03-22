@@ -18,15 +18,6 @@ export default function ChatWindow({ roomId, room }: Props) {
 
     const title = useMemo(() => room?.name ?? 'Room', [room])
 
-    const loadMessages = async () => {
-        try {
-            const data = await chatApi.getRoomMessages(roomId)
-            setMessages(data)
-        } catch (error) {
-            console.error('Failed to load messages:', error)
-        }
-    }
-
     useEffect(() => {
         if (!roomId) return
 
@@ -56,7 +47,8 @@ export default function ChatWindow({ roomId, room }: Props) {
         try {
             await chatApi.sendMessage(roomId, text)
             setText('')
-            await loadMessages()
+            const data = await chatApi.getRoomMessages(roomId)
+            setMessages(data)
         } catch (error) {
             console.error('Send failed:', error)
         }

@@ -9,7 +9,6 @@ export type SseStatus =
 
 interface UseSseOptions {
   url: string;
-  token?: string;
   withCredentials?: boolean;
   onMessage?: (event: MessageEvent) => void;
   onOpen?: () => void;
@@ -18,7 +17,6 @@ interface UseSseOptions {
 
 export function useSse({
   url,
-  token,
   onMessage,
   onOpen,
   onError,
@@ -31,8 +29,7 @@ export function useSse({
 
     setStatus("connecting");
 
-    // Always include credentials
-    const es = new EventSource(url, { withCredentials: true});
+    const es = new EventSource(url, { withCredentials: true });
 
     eventSourceRef.current = es;
 
@@ -49,13 +46,11 @@ export function useSse({
       setStatus("error");
       onError?.(error);
 
-      // Browser auto-reconnects by default.
-      // If server closed connection permanently:
       if (es.readyState === EventSource.CLOSED) {
         setStatus("closed");
       }
     };
-  }, [url, token, onMessage, onOpen, onError]);
+  }, [url, onMessage, onOpen, onError]);
 
   const close = useCallback(() => {
     if (eventSourceRef.current) {

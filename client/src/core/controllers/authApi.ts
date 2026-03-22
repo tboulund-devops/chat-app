@@ -2,48 +2,50 @@ import { User } from "../types/User";
 import { api } from "../../utils/api";
 
 const endpoint = "/api/auth";
+
 export const authApi = { 
     login: async (email: string, password: string): Promise<User> => {
-        return await api(`${endpoint}/login`, {
-            init: {
-                method: 'POST',
-                body: JSON.stringify({ email, password }),
-            },
-        }).then((value) => {
-            const user = value as User;
+        try {
+            const user = await api(`${endpoint}/login`, {
+                init: {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password }),
+                },
+            }) as User;
             console.log('Login successful:', user);
             return user;
-        }).catch((err: any) => {
+        } catch (err: any) {
             console.error('Login failed:', err);
-            throw new Error(err.message || 'Login failed');
-        });
+            throw err;
+        }
     },
 
     logout: async (): Promise<void> => {
-        await api(`${endpoint}/logout`, {
-            init: {
-                method: 'POST',
-            },
-        }).then(() => {
+        try {
+            await api(`${endpoint}/logout`, {
+                init: {
+                    method: 'POST',
+                },
+            });
             console.log('Logout successful');
-        }).catch((err: any) => {
+        } catch (err: any) {
             console.error('Logout failed:', err);
-            throw new Error(err.message || 'Logout failed');
-        });
+            throw err;
+        }
     },
 
     me: async (): Promise<User> => {
-        return await api(`${endpoint}/me`, {
-            init: {
-                method: 'GET',
-            },
-        }).then((value) => {
-            const user = value as User;
+        try {
+            const user = await api(`${endpoint}/me`, {
+                init: {
+                    method: 'GET',
+                },
+            }) as User;
             console.log('Fetched current user:', user);
             return user;
-        }).catch((err: any) => {
+        } catch (err: any) {
             console.error('Failed to fetch current user:', err);
-            throw new Error(err.message || 'Failed to fetch current user');
-        });
+            throw err;
+        }
     }
 };
