@@ -189,6 +189,7 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         services.AddScoped<INotificationFeature, NotificationFeature>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IChatNotificationService, ChatNotificationService>();
+        services.AddScoped<IUserService, UserService>();
         
         // Chat feature
         services.AddScoped<IChatFeature, Application.Features.Chat.ChatFeature>();

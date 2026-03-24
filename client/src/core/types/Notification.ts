@@ -1,8 +1,7 @@
-﻿export type NotificationType = 'Poke' | 'NewMessage';
-
+﻿
 export type Notification = {
     id: string;
-    type: NotificationType;
+    type: number;
     payload: string;
     isRead: boolean;
     createdAt: string;

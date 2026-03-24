@@ -13,7 +13,7 @@ public class ChatNotificationService(
     ISimpleSse backplane
 ) : IChatNotificationService
 {
-    public async Task NotifyRoomMemberAsync(Guid userId, Guid requestRoomId, Guid messageId)
+    public async Task NotifyRoomMemberAsync(Guid userId, Guid requestRoomId, Guid messageId, string content)
     {
         var members = await roomRepository.GetMembersAsync(requestRoomId);
         var tasks = members
@@ -28,7 +28,8 @@ public class ChatNotificationService(
                     type = "new_message",
                     notificationId = notification.Id,
                     requestRoomId,
-                    userId
+                    userId,
+                    content
                 });
             });
         await Task.WhenAll(tasks);

@@ -28,7 +28,7 @@ public class NotificationFeature(
 
         await backplane.SendToUserAsync(targetUserId, new
         {
-            type = "poke",
+            type = NotificationType.Poke,
             notificationId = notification.Id,
             from = pokerId,
             createdAt = notification.CreatedAt

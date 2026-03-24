@@ -35,7 +35,7 @@ public class ChatFeature(
             //_ = chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
             try
             {
-                await chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
+                await chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id, request.Content);
             }
             catch (Exception e)
             {

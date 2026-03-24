@@ -65,17 +65,17 @@ export default function Topbar() {
                                             key={n.id}
                                             onClick={() => handleMarkRead(n.id)}
                                             className={`cursor-pointer px-4 py-3 text-sm hover:bg-zinc-50
-                                                        ${n.isRead
-                                                ? 'text-zinc-400'
-                                                : 'font-medium text-zinc-800'
-                                            }`}
+                    ${n.isRead ? 'text-zinc-400' : 'font-medium text-zinc-800'}`}
                                         >
-                                            {n.type === 'Poke'
-                                                ? '👉 You were poked!'
-                                                : '💬 New message in a room'}
-                                            <span className="ml-2 text-xs text-zinc-400">
+                                            <div>{n.displayTitle}</div>
+                                            {n.displayPreview && (
+                                                <div className="mt-0.5 truncate text-xs text-zinc-400">
+                                                    {n.displayPreview}
+                                                </div>
+                                            )}
+                                            <div className="mt-0.5 text-xs text-zinc-400">
                                                 {new Date(n.createdAt).toLocaleTimeString()}
-                                            </span>
+                                            </div>
                                         </li>
                                     ))
                                 )}
