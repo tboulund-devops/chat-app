@@ -1,9 +1,11 @@
 using System.Text;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
+using Application.Common.Interfaces.Services;
 using Application.Features.Auth;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
+using Application.Services;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Utility;
@@ -130,7 +132,6 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
             logging.ClearProviders();
             logging.AddConsole();
             logging.SetMinimumLevel(LogLevel.Error);
-            // logging.AddProvider(new FileLoggerProvider("logs/app.log"));
         });
         
         Console.WriteLine("Logger configuration loaded.");
@@ -182,6 +183,9 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<IAuthFeature, AuthFeature>();
+        
+        //Notification Feature
+        services.AddScoped<IChatNotificationService, ChatNotificationService>();
         
         // Chat feature
         services.AddScoped<IChatFeature, Application.Features.Chat.ChatFeature>();

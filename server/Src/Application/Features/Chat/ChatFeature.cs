@@ -1,9 +1,12 @@
+using System.Text.Json;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Chat;
 using Application.DTOs.Entities;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 
@@ -12,7 +15,8 @@ namespace Application.Features.Chat;
 public class ChatFeature(
     IChatMessageRepository messageRepository,
     IChatRoomRepository roomRepository,
-    IUserRepository userRepository
+    IUserRepository userRepository,
+    IChatNotificationService chatNotificationService
 ) : IChatFeature
 {
     public async Task<Result<ChatMessageDto>> CreateMessageAsync(Guid userId, SendMessageRequest request)
@@ -26,8 +30,9 @@ public class ChatFeature(
             }
 
             var message = ChatMessage.Create(request.RoomId, userId, request.Content);
-            
             await messageRepository.AddAsync(message);
+
+            _ = chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
 
             var messageDto = new ChatMessageDto(
                 message.Id,
@@ -108,7 +113,6 @@ public class ChatFeature(
     {
         try
         {
-            var room = await roomRepository.FindByIdAsync(roomId);
             
             if (await roomRepository.IsMemberAsync(roomId, userId))
             {

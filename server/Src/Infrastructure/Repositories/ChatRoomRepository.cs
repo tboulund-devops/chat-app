@@ -167,4 +167,11 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
             .Where(r => !r.IsDeleted)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<ChatRoomMember>> GetMembersAsync(Guid roomId)
+    {
+        return await dbContext.ChatRoomMembers
+            .Where(m => m.RoomId == roomId)
+            .ToListAsync();
+    }
 }

@@ -52,6 +52,10 @@ public class ChatController(
             await WriteSseEvent("connected", 
                 $"Connection: {connectionId}", 
                 cancellationToken);
+
+            //Notifications
+            await backplane.SubscribeUserAsync(connectionId, userId);
+            await WriteSseEvent("connected", $"Connection: {connectionId}", cancellationToken);
             
             // Subscribe to rooms
             var clientRooms = await roomRepository.GetRoomsForUserAsync(userId);
@@ -178,9 +182,6 @@ public class ChatController(
     [HttpGet("get-all-rooms")]
     public async Task<IActionResult> GetAllRooms()
     {
-        //var roomsResult = await chatFeature.GetUserRoomsAsync(userId);
-        //return Ok(roomsResult.Dto);
-
         var allRooms = await roomRepository.GetAllRoomsAsync();
         return Ok(allRooms);
 

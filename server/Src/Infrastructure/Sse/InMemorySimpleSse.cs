@@ -105,6 +105,16 @@ public class InMemorySimpleSse : ISimpleSse, IDisposable
         await Task.WhenAll(tasks);
     }
 
+    public Task SendToUserAsync(Guid userId, object message)
+    {
+        return SendToGroupAsync(userId, message);
+    }
+
+    public Task SubscribeUserAsync(Guid connectionId, Guid userId)
+    {
+        return AddToGroupAsync(connectionId, userId);
+    }
+
 
     public void Dispose()
     {
