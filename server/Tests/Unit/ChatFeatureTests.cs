@@ -140,13 +140,15 @@ public class ChatFeatureTests
     [Fact]
     public async Task JoinRoomAsync_ShouldReturnFailure_WhenRoomNotFound()
     {
-        _roomRepository.FindByIdAsync(RoomId)
+        var nonExistingRoomId = Guid.NewGuid();
+    
+        _roomRepository.FindByIdAsync(nonExistingRoomId)
             .Throws(new EntityNotFoundException("Room not found"));
 
-        var result = await _chatFeature.JoinRoomAsync(UserId, RoomId);
+        var result = await _chatFeature.JoinRoomAsync(UserId, nonExistingRoomId);
 
         Assert.False(result.IsSuccess);
-        Assert.Contains("not found", result.Message);
+        Assert.Contains("not found", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── LeaveRoomAsync ───────────────────────────────────────────────────

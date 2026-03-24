@@ -121,11 +121,10 @@ public class ChatFeature(
     {
         try
         {
+            await roomRepository.FindByIdAsync(roomId); // throws if not found
             
             if (await roomRepository.IsMemberAsync(roomId, userId))
-            {
                 return Result.Failure("You are already a member of this room", ResultStatus.Failure);
-            }
 
             await roomRepository.AddMemberAsync(roomId, userId);
             return Result.Success("Successfully joined the room");
