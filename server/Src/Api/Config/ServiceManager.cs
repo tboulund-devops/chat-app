@@ -6,6 +6,7 @@ using Application.Features;
 using Application.Features.Auth;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
+using Application.Features.Notifications;
 using Application.Services;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
@@ -188,8 +189,7 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         //Notification Feature
         services.AddScoped<INotificationFeature, NotificationFeature>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
-        services.AddScoped<IChatNotificationService, ChatNotificationService>();
-        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<INotificationService, NotificationService>();
         
         // Chat feature
         services.AddScoped<IChatFeature, Application.Features.Chat.ChatFeature>();

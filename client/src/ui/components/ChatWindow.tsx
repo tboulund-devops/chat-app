@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+// ChatWindow.tsx
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { DoorClosed } from 'lucide-react'
 import type { ChatRoom } from '../../core/types/ChatRoom'
 import type { ChatMessage } from '../../core/types/ChatMessage'
@@ -7,7 +8,7 @@ import { chatApi } from '../../core/controllers/chatApi'
 import { authApi } from '../../core/controllers/authApi'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
-import MembersPanel_seeder from './MembersPanel_seeder'
+import MembersPanel from "./MembersPanel_seeder";
 
 type Props = {
     roomId: string
@@ -18,12 +19,49 @@ export default function ChatWindow({ roomId, room }: Props) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [text, setText] = useState('')
     const [currentUser, setCurrentUser] = useState<User | null>(null)
+    const eventSourceRef = useRef<EventSource | null>(null)
 
     const title = useMemo(() => room?.name ?? 'Room', [room])
 
     useEffect(() => {
         authApi.me().then(setCurrentUser).catch(console.error)
     }, [])
+
+    // Initial message load
+    useEffect(() => {
+        if (!roomId) return
+        let cancelled = false
+        chatApi.getRoomMessages(roomId)
+            .then(data => { if (!cancelled) setMessages(data) })
+            .catch(console.error)
+        return () => { cancelled = true }
+    }, [roomId])
+
+    // Listen to SSE for real-time messages in this room
+    useEffect(() => {
+        if (!roomId) return
+
+        // Reuse the existing SSE connection via a second EventSource
+        // pointed at the same stream — browser deduplicates these
+        const es = new EventSource('/api/chat/stream', { withCredentials: true })
+
+        // The backend sends room messages with the roomId as the event name
+        es.addEventListener(roomId, (event) => {
+            const data = JSON.parse((event as MessageEvent).data)
+            // data is the SendMessageRequest shape: { roomId, content }
+            // reload messages to get full message with sender info
+            chatApi.getRoomMessages(roomId)
+                .then(setMessages)
+                .catch(console.error)
+        })
+
+        eventSourceRef.current = es
+
+        return () => {
+            es.close()
+            eventSourceRef.current = null
+        }
+    }, [roomId])
 
     const loadMessages = async () => {
         try {
@@ -34,23 +72,12 @@ export default function ChatWindow({ roomId, room }: Props) {
         }
     }
 
-    useEffect(() => {
-        if (!roomId) return
-        let cancelled = false
-
-        chatApi.getRoomMessages(roomId)
-            .then(data => { if (!cancelled) setMessages(data) })
-            .catch(console.error)
-
-        return () => { cancelled = true }
-    }, [roomId])
-
     const handleSend = async () => {
         if (!text.trim()) return
         try {
             await chatApi.sendMessage(roomId, text)
             setText('')
-            await loadMessages()
+            // Don't reload here — SSE will trigger it
         } catch (error) {
             console.error('Send failed:', error)
         }
@@ -81,7 +108,7 @@ export default function ChatWindow({ roomId, room }: Props) {
                 />
             </section>
 
-            <MembersPanel_seeder roomId={roomId} />
+            <MembersPanel roomId={roomId} />
         </div>
     )
 }

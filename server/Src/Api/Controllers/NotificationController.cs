@@ -1,7 +1,5 @@
 ﻿using Application.Common.Interfaces.Features;
-using Application.Common.Interfaces.Services;
 using Application.Common.Results;
-using Application.DTOs.Entities;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +7,7 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/notifications")]
-public class NotificationController(INotificationFeature notificationFeature, IUserService userService) : BaseController
+public class NotificationController(INotificationFeature notificationFeature) : BaseController
 {
     [HttpPost("poke/{targetUserId:guid}")]
     public async Task<IActionResult> Poke(Guid targetUserId)
@@ -34,19 +32,6 @@ public class NotificationController(INotificationFeature notificationFeature, IU
         catch (UnauthorizedAccessException) { return Unauthorized(); }
     }
     
-    [HttpGet("{userId:guid}")]
-    public async Task<IActionResult> GetUser(Guid userId)
-    {
-        try
-        {
-            var user = await userService.GetUserByIdAsync(userId);
-            return Ok(UserDto.Map(user));
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound();
-        }
-    }
 
     [HttpPatch("{notificationId:guid}/read")]
     public async Task<IActionResult> MarkRead(Guid notificationId)
@@ -63,5 +48,16 @@ public class NotificationController(INotificationFeature notificationFeature, IU
         }
         catch (UnauthorizedAccessException) { return Unauthorized(); }
         catch (EntityNotFoundException) { return NotFound(); }
+    }
+    
+    [HttpPatch("read-all")]
+    public async Task<IActionResult> MarkAllRead()
+    {
+        try
+        {
+            var result = await notificationFeature.MarkAllReadAsync(GetUserId());
+            return result.Status == ResultStatus.Success ? NoContent() : BadRequest(result);
+        }
+        catch (UnauthorizedAccessException) { return Unauthorized(); }
     }
 }

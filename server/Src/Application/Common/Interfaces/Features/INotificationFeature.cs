@@ -8,4 +8,5 @@ public interface INotificationFeature
     Task<Result> PokeUserAsync(Guid pokerId, Guid targetUserId);
     Task<Result<IEnumerable<NotificationDto>>> GetUnreadAsync(Guid userId);
     Task<Result> MarkReadAsync(Guid userId, Guid notificationId);
+    Task<Result> MarkAllReadAsync(Guid userId);
 }

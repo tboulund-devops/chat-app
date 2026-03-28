@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Notifications;
 using Domain.Entities;
@@ -8,33 +9,26 @@ using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 
-namespace Application.Features;
+namespace Application.Features.Notifications;
 
 public class NotificationFeature(
     INotificationRepository notificationRepository,
     IUserRepository userRepository,
-    ISimpleSse backplane
+    INotificationService notificationService
 ) : INotificationFeature
 {
     public async Task<Result> PokeUserAsync(Guid pokerId, Guid targetUserId)
     {
-        // throws EntityNotFoundException if not found — caught in controller
-        await userRepository.FindByIdAsync(targetUserId);
-
-        var payload = JsonSerializer.Serialize(new { PokerId = pokerId });
-        var notification = Notification.Create(targetUserId, NotificationType.Poke, payload);
-
-        await notificationRepository.AddAsync(notification);
-
-        await backplane.SendToUserAsync(targetUserId, new
+        try
         {
-            type = NotificationType.Poke,
-            notificationId = notification.Id,
-            from = pokerId,
-            createdAt = notification.CreatedAt
-        });
-
-        return Result.Success();
+            await userRepository.FindByIdAsync(targetUserId); // validate target exists
+            await notificationService.NotifyPokeAsync(pokerId, targetUserId);
+            return Result.Success();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return Result.Failure(ex.Message, ResultStatus.NotFound);
+        }
     }
 
     public async Task<Result<IEnumerable<NotificationDto>>> GetUnreadAsync(Guid userId)
@@ -51,6 +45,12 @@ public class NotificationFeature(
             return Result.Failure("Not your notification", ResultStatus.Unauthorized);
 
         await notificationRepository.MarkAsReadAsync(notificationId);
+        return Result.Success();
+    }
+
+    public async Task<Result> MarkAllReadAsync(Guid userId)
+    {
+        await notificationRepository.MarkAllAsReadAsync(userId);
         return Result.Success();
     }
 }

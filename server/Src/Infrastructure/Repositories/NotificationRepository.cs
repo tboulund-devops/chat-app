@@ -52,4 +52,11 @@ public class NotificationRepository(MyDbContext dbContext) : INotificationReposi
             .Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true)) > 0;
     }
+
+    public async Task MarkAllAsReadAsync(Guid userId)
+    {
+        await dbContext.Notifications
+            .Where(n => n.RecipientId == userId && !n.IsRead)
+            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));       
+    }
 }

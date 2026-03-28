@@ -10,20 +10,26 @@ interface UseSseOptions {
   url: string;
   onOpen?: () => void;
   onError?: (error: Event) => void;
-  events?: SseEventHandlers; // named event handlers
+  events?: SseEventHandlers;
+  eventNames: string[]; // explicit list so listeners are registered reliably
+  onUnknownEvent?: (eventName: string, event: MessageEvent) => void; // NEW
 }
 
-export function useSse({ url, onOpen, onError, events = {} }: UseSseOptions) {
+export function useSse({ url, onOpen, onError, events = {}, eventNames }: UseSseOptions) {
   const [status, setStatus] = useState<SseStatus>("idle");
   const eventSourceRef = useRef<EventSource | null>(null);
   const eventsRef = useRef<SseEventHandlers>(events);
-  eventsRef.current = events;
+  eventsRef.current = events; // always up to date, no stale closures
 
-  const connect = useCallback(() => {
-    if (eventSourceRef.current) return;
-    console.log("connect() called, registered events:", Object.keys(eventsRef.current));
+  const reconnect = useCallback(() => {
+    // Close existing connection inline to avoid stale ref issues
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+      setStatus("closed");
+    }
+
     setStatus("connecting");
-
     const es = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = es;
 
@@ -38,8 +44,12 @@ export function useSse({ url, onOpen, onError, events = {} }: UseSseOptions) {
       if (es.readyState === EventSource.CLOSED) setStatus("closed");
     };
 
-    Object.keys(eventsRef.current).forEach((eventName) => {
+    // Use explicit eventNames so listeners are always registered
+    // regardless of when eventsRef gets populated
+    console.log("registering event listeners:", eventNames);
+    eventNames.forEach((eventName) => {
       es.addEventListener(eventName, (event) => {
+        console.log(`[useSse] fired: ${eventName}`);  // add this
         eventsRef.current[eventName]?.(event as MessageEvent);
       });
     });
@@ -53,10 +63,5 @@ export function useSse({ url, onOpen, onError, events = {} }: UseSseOptions) {
     }
   }, []);
 
-  return {
-    status,
-    close,
-    connect,
-    reconnect: () => { close(); connect(); },
-  };
+  return { status, close, reconnect };
 }

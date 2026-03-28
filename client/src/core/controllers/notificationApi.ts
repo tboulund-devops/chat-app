@@ -19,4 +19,10 @@ export const notificationApi = {
             init: { method: 'POST' },
         });
     },
+
+    markAllRead: async (): Promise<void> => {
+        await api('/api/notifications/read-all', {
+            init: { method: 'PATCH' },
+        });
+    },
 };

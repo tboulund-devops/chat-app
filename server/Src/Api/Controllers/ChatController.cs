@@ -78,7 +78,7 @@ public class ChatController(
             await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
             {
                 await WriteSseEvent(
-                    evt.Group.ToString()!,
+                    evt.EventName,
                     evt.Data.GetRawText(),
                     cancellationToken);
             }

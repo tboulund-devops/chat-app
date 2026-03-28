@@ -1,12 +1,9 @@
-using System.Text.Json;
-using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
 using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Chat;
 using Application.DTOs.Entities;
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 
@@ -15,15 +12,14 @@ namespace Application.Features.Chat;
 public class ChatFeature(
     IChatMessageRepository messageRepository,
     IChatRoomRepository roomRepository,
-    IUserRepository userRepository,
-    IChatNotificationService chatNotificationService
+    INotificationService notificationService
 ) : IChatFeature
 {
     public async Task<Result<ChatMessageDto>> CreateMessageAsync(Guid userId, SendMessageRequest request)
     {
         try
         {
-            // Verify user is member of the room
+            // Verify the user is a member of the room
             if (!await roomRepository.IsMemberAsync(request.RoomId, userId))
             {
                 return Result<ChatMessageDto>.Failure("You are not a member of this room");
@@ -32,10 +28,9 @@ public class ChatFeature(
             var message = ChatMessage.Create(request.RoomId, userId, request.Content);
             await messageRepository.AddAsync(message);
 
-            //_ = chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id);
             try
             {
-                await chatNotificationService.NotifyRoomMemberAsync(userId, request.RoomId, message.Id, request.Content);
+                await notificationService.NotifyNewMessageAsync(userId, request.RoomId, message.Id, request.Content);
             }
             catch (Exception e)
             {
@@ -150,7 +145,7 @@ public class ChatFeature(
 
             await roomRepository.RemoveMemberAsync(roomId, userId);
             // Note: SSE connections are managed by connectionId, not userId
-            // Active connections will fail authorization on next request
+            // Active connections will fail authorization on the next request
             
             return Result.Success();
         }
