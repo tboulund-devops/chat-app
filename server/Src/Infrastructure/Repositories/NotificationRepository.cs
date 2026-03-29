@@ -41,7 +41,7 @@ public class NotificationRepository(MyDbContext dbContext) : INotificationReposi
     public async Task<IEnumerable<Notification>> GetByUserIdAsync(Guid userId, bool unreadOnly = false)
     {
         return await dbContext.Notifications
-            .Where(n => n.RecipientId == userId && (unreadOnly || !n.IsRead))
+            .Where(n => n.RecipientId == userId && (!unreadOnly || !n.IsRead))
             .OrderByDescending(n => n.CreatedAt)
             .ToListAsync();
     }

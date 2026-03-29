@@ -27,7 +27,7 @@ public class NotificationFeature(
         }
         catch (EntityNotFoundException ex)
         {
-            return Result.Failure(ex.Message, ResultStatus.NotFound);
+            return Result.Failure("User not found", ResultStatus.NotFound);
         }
     }
 
@@ -39,13 +39,25 @@ public class NotificationFeature(
 
     public async Task<Result> MarkReadAsync(Guid userId, Guid notificationId)
     {
-        var notification = await notificationRepository.FindByIdAsync(notificationId);
-
-        if (notification.RecipientId != userId)
-            return Result.Failure("Not your notification", ResultStatus.Unauthorized);
-
-        await notificationRepository.MarkAsReadAsync(notificationId);
-        return Result.Success();
+        try
+        {
+           var notification = await notificationRepository.FindByIdAsync(notificationId);
+           
+                   if (notification.RecipientId != userId)
+                       return Result.Failure("Not your notification", ResultStatus.Unauthorized);
+           
+                   await notificationRepository.MarkAsReadAsync(notificationId);
+                   return Result.Success(); 
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return Result.Failure(ex.Message, ResultStatus.NotFound);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Result.Failure("Unauthorized", ResultStatus.Unauthorized);
+        }
+        
     }
 
     public async Task<Result> MarkAllReadAsync(Guid userId)

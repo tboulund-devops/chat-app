@@ -295,7 +295,6 @@ public class ChatController(
             return result.Status switch
             {
                 ResultStatus.Success => Ok(result),
-                ResultStatus.Unauthorized => Forbid(),
                 _ => BadRequest(result)
             };
         }

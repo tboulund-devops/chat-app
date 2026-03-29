@@ -15,10 +15,14 @@ public class NotificationController(INotificationFeature notificationFeature) : 
         try
         {
             var result = await notificationFeature.PokeUserAsync(GetUserId(), targetUserId);
-            return result.Status == ResultStatus.Success ? Ok() : BadRequest(result);
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(),
+                ResultStatus.NotFound => NotFound(result.Message),
+                _ => BadRequest(result)
+            };
         }
         catch (UnauthorizedAccessException) { return Unauthorized(); }
-        catch (EntityNotFoundException) { return NotFound("User not found"); }
     }
 
     [HttpGet]
@@ -42,12 +46,12 @@ public class NotificationController(INotificationFeature notificationFeature) : 
             return result.Status switch
             {
                 ResultStatus.Success => NoContent(),
+                ResultStatus.NotFound => NotFound(),
                 ResultStatus.Unauthorized => Forbid(),
                 _ => BadRequest(result)
             };
         }
         catch (UnauthorizedAccessException) { return Unauthorized(); }
-        catch (EntityNotFoundException) { return NotFound(); }
     }
     
     [HttpPatch("read-all")]
