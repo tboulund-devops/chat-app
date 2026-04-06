@@ -8,13 +8,12 @@ import { authApi } from '../../core/controllers/authApi'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
 import MembersPanel from './MembersPanel_seeder'
+import EmojiPickerPopup from './EmojiPickerPopup'
 
 type Props = {
     roomId: string
     room?: ChatRoom
 }
-
-const EMOJIS = ['😀', '😂', '😍', '👍', '❤️', '🎉', '🔥', '😎', '😭', '🙏']
 
 export default function ChatWindow({ roomId, room }: Props) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -99,11 +98,6 @@ export default function ChatWindow({ roomId, room }: Props) {
         }
     }
 
-    const handleEmojiSelect = (emoji: string) => {
-        setText((prev) => prev + emoji)
-        setShowEmojiPicker(false)
-    }
-
     const handleImageUpload = async (file: File) => {
         try {
             // Waiting for backend API, fx
@@ -154,23 +148,13 @@ export default function ChatWindow({ roomId, room }: Props) {
                 />
 
                 {showEmojiPicker && (
-                    <div className="absolute bottom-24 right-6 z-20 w-72 rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl">
-                        <div className="mb-3 text-sm font-semibold text-zinc-800">
-                            Choose emoji
-                        </div>
-                        <div className="grid grid-cols-5 gap-2">
-                            {EMOJIS.map((emoji) => (
-                                <button
-                                    key={emoji}
-                                    type="button"
-                                    onClick={() => handleEmojiSelect(emoji)}
-                                    className="rounded-xl p-2 text-xl transition hover:bg-zinc-100"
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <EmojiPickerPopup
+                        onSelect={(emoji) => {
+                            setText((prev) => prev + emoji)
+                            setShowEmojiPicker(false)
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                    />
                 )}
 
                 {showGifPicker && (
