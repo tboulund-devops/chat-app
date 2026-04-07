@@ -6,7 +6,7 @@ services:
       - "5006:5006"
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
-      - Database__PSqlConnectionString=Host=db;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres
+      - Database__PSqlConnectionString=Host=db;Port=5432;Database=${DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD}
       - Database__RedisConnectionString=redis:6379
     depends_on:
       db:
@@ -26,9 +26,9 @@ services:
     image: postgres:17-alpine
     container_name: incidenttracker-db
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=Incident_Tracker
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
