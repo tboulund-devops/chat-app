@@ -52,6 +52,9 @@ public class ChatController(
             await WriteSseEvent("connected", 
                 $"Connection: {connectionId}", 
                 cancellationToken);
+
+            //Notifications
+            await backplane.SubscribeUserAsync(connectionId, userId);
             
             // Subscribe to rooms
             var clientRooms = await roomRepository.GetRoomsForUserAsync(userId);
@@ -75,7 +78,7 @@ public class ChatController(
             await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
             {
                 await WriteSseEvent(
-                    evt.Group.ToString()!,
+                    evt.EventName,
                     evt.Data.GetRawText(),
                     cancellationToken);
             }
@@ -178,9 +181,6 @@ public class ChatController(
     [HttpGet("get-all-rooms")]
     public async Task<IActionResult> GetAllRooms()
     {
-        //var roomsResult = await chatFeature.GetUserRoomsAsync(userId);
-        //return Ok(roomsResult.Dto);
-
         var allRooms = await roomRepository.GetAllRoomsAsync();
         return Ok(allRooms);
 
@@ -295,7 +295,6 @@ public class ChatController(
             return result.Status switch
             {
                 ResultStatus.Success => Ok(result),
-                ResultStatus.Unauthorized => Forbid(),
                 _ => BadRequest(result)
             };
         }
@@ -323,5 +322,22 @@ public class ChatController(
         {
             return Unauthorized();
         }
+    }
+    
+    /// <summary>Get members of a room</summary>
+    [HttpGet("rooms/{roomId:guid}/members")]
+    public async Task<IActionResult> GetRoomMembers(Guid roomId)
+    {
+        Guid userId;
+        try { userId = GetUserId(); }
+        catch (UnauthorizedAccessException) { return Unauthorized(); }
+
+        var result = await chatFeature.GetRoomMembersAsync(userId, roomId);
+        return result.Status switch
+        {
+            ResultStatus.Success => Ok(result.Dto),
+            ResultStatus.Unauthorized => Forbid(),
+            _ => BadRequest(result)
+        };
     }
 }

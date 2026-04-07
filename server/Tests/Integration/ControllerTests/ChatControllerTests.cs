@@ -76,7 +76,7 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task EditMessage_ShouldReturn200_WhenOwnerEditsOwnMessage()
     {
-        var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (roomId, messageId) = await CreateRoomWithMessageAsync(client);
 
         var response = await client.PatchAsJsonAsync($"api/chat/messages/{messageId}", new { newContent = "Edited content" }, cancellationToken: TestContext.Current.CancellationToken);
@@ -87,14 +87,13 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task EditMessage_ShouldReturn403_WhenNotOwner()
     {
-        var ownerClient = await AuthHelper.CreateAuthenticatedClientAsync(factory);
-        var otherClient = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (otherClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
 
         var (roomId, messageId) = await CreateRoomWithMessageAsync(ownerClient);
 
-        // Other user joins so they're authenticated in the room context
         await otherClient.PostAsync($"api/chat/rooms/{roomId}/join", null, TestContext.Current.CancellationToken);
-        
+
         var response = await otherClient.PatchAsJsonAsync($"api/chat/messages/{messageId}", new { newContent = "Sneaky edit" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -103,22 +102,23 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task EditMessage_ShouldReturn400_WhenMessageIsAlreadyDeleted()
     {
-        var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (_, messageId) = await CreateRoomWithMessageAsync(client);
 
         await client.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
 
         var response = await client.PatchAsJsonAsync($"api/chat/messages/{messageId}", new { newContent = "Editing a deleted message" }, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode); // was incomplete
     }
 
     // ── Delete message ───────────────────────────────────────────────────
 
+  
     [Fact]
     public async Task DeleteMessage_ShouldReturn200_WhenOwnerDeletesOwnMessage()
     {
-        var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (_, messageId) = await CreateRoomWithMessageAsync(client);
 
         var response = await client.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
@@ -129,8 +129,8 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task DeleteMessage_ShouldReturn403_WhenNotOwner()
     {
-        var ownerClient = await AuthHelper.CreateAuthenticatedClientAsync(factory);
-        var otherClient = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (otherClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
 
         var (roomId, messageId) = await CreateRoomWithMessageAsync(ownerClient);
 
@@ -144,15 +144,14 @@ public sealed class ChatControllerTests(ApiFactory factory)
     [Fact]
     public async Task DeleteMessage_ShouldSoftDelete_WhenOwnerDeletesOwnMessage()
     {
-        var client = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+        var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
         var (roomId, messageId) = await CreateRoomWithMessageAsync(client);
 
         await client.DeleteAsync($"api/chat/messages/{messageId}", TestContext.Current.CancellationToken);
 
-        // After soft delete the message is filtered out of results
         var messagesResponse = await client.GetAsync($"api/chat/rooms/{roomId}/messages", TestContext.Current.CancellationToken);
         var envelope = await messagesResponse.Content.ReadFromJsonAsync<ResultEnvelope<IEnumerable<ChatMessageDto>>>(cancellationToken: TestContext.Current.CancellationToken);
-    
+
         Assert.DoesNotContain(envelope!.Dto!, m => m.Id == messageId);
     }
 

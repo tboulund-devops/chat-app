@@ -1,4 +1,5 @@
-﻿using Application.Common.Results;
+﻿using Application.Common.Interfaces.Services;
+using Application.Common.Results;
 using Application.DTOs.Chat;
 using Application.Features.Chat;
 using Domain.Entities;
@@ -14,7 +15,7 @@ public class ChatFeatureTests
 {
     private readonly IChatMessageRepository _messageRepository = Substitute.For<IChatMessageRepository>();
     private readonly IChatRoomRepository _roomRepository = Substitute.For<IChatRoomRepository>();
-    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly ChatFeature _chatFeature;
 
     private static readonly Guid UserId = Guid.NewGuid();
@@ -22,7 +23,7 @@ public class ChatFeatureTests
 
     public ChatFeatureTests()
     {
-        _chatFeature = new ChatFeature(_messageRepository, _roomRepository, _userRepository);
+        _chatFeature = new ChatFeature(_messageRepository, _roomRepository, _notificationService);
     }
 
     // ── CreateMessageAsync ───────────────────────────────────────────────
@@ -138,13 +139,15 @@ public class ChatFeatureTests
     [Fact]
     public async Task JoinRoomAsync_ShouldReturnFailure_WhenRoomNotFound()
     {
-        _roomRepository.FindByIdAsync(RoomId)
+        var nonExistingRoomId = Guid.NewGuid();
+    
+        _roomRepository.FindByIdAsync(nonExistingRoomId)
             .Throws(new EntityNotFoundException("Room not found"));
 
-        var result = await _chatFeature.JoinRoomAsync(UserId, RoomId);
+        var result = await _chatFeature.JoinRoomAsync(UserId, nonExistingRoomId);
 
         Assert.False(result.IsSuccess);
-        Assert.Contains("not found", result.Message);
+        Assert.Contains("not found", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── LeaveRoomAsync ───────────────────────────────────────────────────

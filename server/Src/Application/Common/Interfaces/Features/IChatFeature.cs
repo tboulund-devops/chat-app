@@ -14,4 +14,5 @@ public interface IChatFeature
     Task<Result<IEnumerable<ChatRoomDto>>> SearchRoomByNameAsync(string name);
     Task<Result> EditMessageAsync(Guid userId, Guid messageId, string newContent);
     Task<Result> DeleteMessageAsync(Guid userId, Guid messageId);
+    Task<Result<IEnumerable<RoomMemberDto>>> GetRoomMembersAsync(Guid userId, Guid roomId);
 }

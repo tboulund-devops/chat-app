@@ -7,7 +7,7 @@ namespace Application.DTOs.Chat;
 public record ChatMessageDto(
     Guid Id,
     Guid RoomId,
-    UserDto Sender,
+    UserDto? Sender,
     string Content,
     DateTime CreatedAt
 );

@@ -10,7 +10,7 @@ public static class AuthHelper
 {
     private static int _counter = 0;
 
-    public static async Task<HttpClient> CreateAuthenticatedClientAsync(ApiFactory factory)
+    public static async Task<(HttpClient Client, Guid UserId)> CreateAuthenticatedClientAsync(ApiFactory factory)
     {
         var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -52,7 +52,6 @@ public static class AuthHelper
         var tokenValue = accessTokenCookie.Split(';')[0];
         client.DefaultRequestHeaders.Add("Cookie", tokenValue);
 
-        // Verify cookie works — throw full details if it fails
         var meResponse = await client.GetAsync("api/auth/me");
         if (!meResponse.IsSuccessStatusCode)
         {
@@ -65,6 +64,23 @@ public static class AuthHelper
                 $"/me body: {meBody}");
         }
 
-        return client;
+        // Extract userId from JWT — no need for /me to return it
+        var userId = ExtractUserIdFromJwt(tokenValue.Split('=', 2)[1]);
+
+        return (client, userId);
+    }
+
+    private static Guid ExtractUserIdFromJwt(string token)
+    {
+        var payload = token.Split('.')[1];
+        payload = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
+        var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+        var doc = System.Text.Json.JsonDocument.Parse(json);
+
+        var idClaim = doc.RootElement
+            .GetProperty("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+            .GetString();
+
+        return Guid.TryParse(idClaim, out var id) ? id : Guid.Empty;
     }
 }

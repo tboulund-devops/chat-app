@@ -1,6 +1,7 @@
 import type { ChatRoom } from '../types/ChatRoom'
 import type { ChatMessage } from '../types/ChatMessage'
 import { api } from "../../utils/api";
+import {RoomMember} from "../types/RoomMember";
 
 const endpoint = '/api/chat';
 
@@ -78,5 +79,9 @@ export const chatApi = {
     await api(`${endpoint}/messages/${messageId}`, {
       init: { method: 'DELETE' },
     })
+  },
+
+  getRoomMembers: async (roomId: string): Promise<RoomMember[]> => {
+    return await api<RoomMember[]>(`${endpoint}/rooms/${roomId}/members`);
   },
 };
