@@ -9,6 +9,7 @@ import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
 import MembersPanel from './MembersPanel_seeder'
 import EmojiPickerPopup from './EmojiPickerPopup'
+import GifPickerPopup from './GifPickerPopup'
 
 type Props = {
     roomId: string
@@ -21,7 +22,6 @@ export default function ChatWindow({ roomId, room }: Props) {
     const [currentUser, setCurrentUser] = useState<User | null>(null)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showGifPicker, setShowGifPicker] = useState(false)
-    const [gifUrl, setGifUrl] = useState('')
     const eventSourceRef = useRef<EventSource | null>(null)
 
     const title = useMemo(() => room?.name ?? 'Room', [room])
@@ -111,25 +111,6 @@ export default function ChatWindow({ roomId, room }: Props) {
         }
     }
 
-    const handleGifSend = async () => {
-        const trimmed = gifUrl.trim()
-        if (!trimmed) return
-
-        try {
-            // Option A:
-            // If backend supports GIF messages:
-            // await chatApi.sendGifMessage(roomId, trimmed)
-
-            // Temporary fallback:
-            await chatApi.sendMessage(roomId, `[GIF] ${trimmed}`)
-
-            setGifUrl('')
-            setShowGifPicker(false)
-        } catch (error) {
-            console.error('GIF send failed:', error)
-        }
-    }
-
     return (
         <div className="grid h-[calc(100vh-56px)] grid-cols-1 lg:grid-cols-[1fr_260px]">
             <section className="relative flex min-h-0 flex-col border-r border-zinc-200">
@@ -158,36 +139,17 @@ export default function ChatWindow({ roomId, room }: Props) {
                 )}
 
                 {showGifPicker && (
-                    <div className="absolute bottom-24 right-6 z-20 w-80 rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl">
-                        <div className="mb-3 text-sm font-semibold text-zinc-800">
-                            Paste GIF URL
-                        </div>
-                        <input
-                            value={gifUrl}
-                            onChange={(e) => setGifUrl(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                        />
-                        <div className="mt-3 flex justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setGifUrl('')
-                                    setShowGifPicker(false)
-                                }}
-                                className="rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleGifSend}
-                                className="rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-800"
-                            >
-                                Send GIF
-                            </button>
-                        </div>
-                    </div>
+                    <GifPickerPopup
+                        onSelect={async (gifUrl) => {
+                            try {
+                                await chatApi.sendMessage(roomId, `[GIF] ${gifUrl}`)
+                                setShowGifPicker(false)
+                            } catch (error) {
+                                console.error('GIF send failed:', error)
+                            }
+                        }}
+                        onClose={() => setShowGifPicker(false)}
+                    />
                 )}
 
                 <MessageComposer
