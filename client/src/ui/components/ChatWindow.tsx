@@ -1,4 +1,3 @@
-// ChatWindow.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DoorClosed } from 'lucide-react'
 import type { ChatRoom } from '../../core/types/ChatRoom'
@@ -8,7 +7,9 @@ import { chatApi } from '../../core/controllers/chatApi'
 import { authApi } from '../../core/controllers/authApi'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
-import MembersPanel from "./MembersPanel_seeder";
+import MembersPanel from './MembersPanel_seeder'
+import EmojiPickerPopup from './EmojiPickerPopup'
+import GifPickerPopup from './GifPickerPopup'
 
 type Props = {
     roomId: string
@@ -19,6 +20,8 @@ export default function ChatWindow({ roomId, room }: Props) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [text, setText] = useState('')
     const [currentUser, setCurrentUser] = useState<User | null>(null)
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+    const [showGifPicker, setShowGifPicker] = useState(false)
     const eventSourceRef = useRef<EventSource | null>(null)
 
     const title = useMemo(() => room?.name ?? 'Room', [room])
@@ -27,43 +30,9 @@ export default function ChatWindow({ roomId, room }: Props) {
         authApi.me().then(setCurrentUser).catch(console.error)
     }, [])
 
-    // Initial message load
-    useEffect(() => {
-        if (!roomId) return
-        let cancelled = false
-        chatApi.getRoomMessages(roomId)
-            .then(data => { if (!cancelled) setMessages(data) })
-            .catch(console.error)
-        return () => { cancelled = true }
-    }, [roomId])
-
-    // Listen to SSE for real-time messages in this room
-    useEffect(() => {
-        if (!roomId) return
-
-        // Reuse the existing SSE connection via a second EventSource
-        // pointed at the same stream — browser deduplicates these
-        const es = new EventSource('/api/chat/stream', { withCredentials: true })
-
-        // The backend sends room messages with the roomId as the event name
-        es.addEventListener(roomId, (event) => {
-            const data = JSON.parse((event as MessageEvent).data)
-            // data is the SendMessageRequest shape: { roomId, content }
-            // reload messages to get full message with sender info
-            chatApi.getRoomMessages(roomId)
-                .then(setMessages)
-                .catch(console.error)
-        })
-
-        eventSourceRef.current = es
-
-        return () => {
-            es.close()
-            eventSourceRef.current = null
-        }
-    }, [roomId])
-
     const loadMessages = async () => {
+        if (!roomId) return
+
         try {
             const data = await chatApi.getRoomMessages(roomId)
             setMessages(data)
@@ -72,20 +41,79 @@ export default function ChatWindow({ roomId, room }: Props) {
         }
     }
 
+    useEffect(() => {
+        if (!roomId) return
+
+        let cancelled = false
+
+        chatApi.getRoomMessages(roomId)
+            .then((data) => {
+                if (!cancelled) setMessages(data)
+            })
+            .catch(console.error)
+
+        return () => {
+            cancelled = true
+        }
+    }, [roomId])
+
+    useEffect(() => {
+        if (!roomId) return
+
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close()
+            eventSourceRef.current = null
+        }
+
+        const es = new EventSource('/api/chat/stream', { withCredentials: true })
+
+        const handleRoomMessage = () => {
+            loadMessages().catch(console.error)
+        }
+
+        es.addEventListener(roomId, handleRoomMessage)
+        eventSourceRef.current = es
+
+        es.onerror = (error) => {
+            console.error('SSE connection error:', error)
+        }
+
+        return () => {
+            es.removeEventListener(roomId, handleRoomMessage)
+            es.close()
+            eventSourceRef.current = null
+        }
+    }, [roomId])
+
     const handleSend = async () => {
-        if (!text.trim()) return
+        const trimmed = text.trim()
+        if (!trimmed) return
+
         try {
-            await chatApi.sendMessage(roomId, text)
+            await chatApi.sendMessage(roomId, trimmed)
             setText('')
-            // Don't reload here — SSE will trigger it
+            setShowEmojiPicker(false)
         } catch (error) {
             console.error('Send failed:', error)
         }
     }
 
+    const handleImageUpload = async (file: File) => {
+        try {
+            // Waiting for backend API, fx
+            // await chatApi.sendImageMessage(roomId, file)
+
+            // Temporary fallback:
+            // send image name as text until backend file upload is ready
+            await chatApi.sendMessage(roomId, `[Image] ${file.name}`)
+        } catch (error) {
+            console.error('Image upload failed:', error)
+        }
+    }
+
     return (
         <div className="grid h-[calc(100vh-56px)] grid-cols-1 lg:grid-cols-[1fr_260px]">
-            <section className="flex min-h-0 flex-col border-r border-zinc-200">
+            <section className="relative flex min-h-0 flex-col border-r border-zinc-200">
                 <div className="flex h-14 items-center gap-3 border-b border-zinc-200 px-5">
                     <DoorClosed className="h-4 w-4 text-zinc-400" />
                     <h1 className="text-sm font-semibold text-zinc-900">{title}</h1>
@@ -100,10 +128,43 @@ export default function ChatWindow({ roomId, room }: Props) {
                     onMessageChanged={loadMessages}
                 />
 
+                {showEmojiPicker && (
+                    <EmojiPickerPopup
+                        onSelect={(emoji) => {
+                            setText((prev) => prev + emoji)
+                            setShowEmojiPicker(false)
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                    />
+                )}
+
+                {showGifPicker && (
+                    <GifPickerPopup
+                        onSelect={async (gifUrl) => {
+                            try {
+                                await chatApi.sendMessage(roomId, `[GIF] ${gifUrl}`)
+                                setShowGifPicker(false)
+                            } catch (error) {
+                                console.error('GIF send failed:', error)
+                            }
+                        }}
+                        onClose={() => setShowGifPicker(false)}
+                    />
+                )}
+
                 <MessageComposer
                     value={text}
                     onChange={setText}
                     onSend={handleSend}
+                    onOpenEmoji={() => {
+                        setShowGifPicker(false)
+                        setShowEmojiPicker((prev) => !prev)
+                    }}
+                    onPickGif={() => {
+                        setShowEmojiPicker(false)
+                        setShowGifPicker((prev) => !prev)
+                    }}
+                    onPickImage={handleImageUpload}
                     placeholder={`Message ${title}`}
                 />
             </section>
