@@ -40,6 +40,7 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 
 ### Week 8
 **Feature 1:** Frontend UI framework 
+
 **Feature 2:** Chat SSE
 
 ### Week 9
@@ -63,9 +64,9 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 **Feature 2:** Poke Users 
 
 ### Week 13
-**Feature 1:** [...]
+**Feature 1:** UI/UX: Sending Image/Gif Messages
 
-**Feature 2:** [...]
+**Feature 2:** Backend: Message Entity Refactor
 
 ### Week 14
 *Easter vacation - nothing planned.*
