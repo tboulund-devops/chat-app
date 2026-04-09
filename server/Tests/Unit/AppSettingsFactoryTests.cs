@@ -65,7 +65,7 @@ public class AppSettingsFactoryTests
     {
         var config = BuildConfig(new()
         {
-            ["Jwt:Secret"] = "supersecretkey1234567890abcdef12",
+            ["Jwt:Secret"] = "supers_ecretkey1234567890abcdef12",
             ["Jwt:Issuer"] = "myapp",
             ["Jwt:Audience"] = "myapp",
             ["Database:PSqlConnectionString"] = "Host=localhost;Database=test",

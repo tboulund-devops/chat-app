@@ -32,7 +32,6 @@ dist-ssr
 .env
 .env.Development
 .env.Production
-appsettings.json
 appsettings.*.json
 
 # User-specific files

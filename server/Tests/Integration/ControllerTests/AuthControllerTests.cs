@@ -25,7 +25,7 @@ public sealed class AuthControllerTests(ApiFactory factory)
         {
             Email = "nobody@nowhere.com",
             Password = "wrongpassword"
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -40,13 +40,13 @@ public sealed class AuthControllerTests(ApiFactory factory)
             Email = "test@test.com",
             Password = "ValidPassword1!",
             Role = RoleType.User
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         var response = await _client.PostAsJsonAsync("api/auth/login", new LoginCommand
         {
             Email = "test@test.com",
             Password = "ValidPassword1!"
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     
@@ -69,7 +69,7 @@ public sealed class AuthControllerTests(ApiFactory factory)
             Email = "jane@doe.com",
             Password = "SecurePass1!",
             Role = RoleType.User
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -84,7 +84,7 @@ public sealed class AuthControllerTests(ApiFactory factory)
             Email = "badactor@evil.com",
             Password = "SecurePass1!",
             Role = RoleType.Admin
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -94,7 +94,7 @@ public sealed class AuthControllerTests(ApiFactory factory)
     [Fact]
     public async Task GetMe_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.GetAsync("api/auth/me");
+        var response = await _client.GetAsync("api/auth/me", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -103,7 +103,7 @@ public sealed class AuthControllerTests(ApiFactory factory)
     [Fact]
     public async Task Logout_ShouldReturn401_WhenNotAuthenticated()
     {
-        var response = await _client.PostAsync("api/auth/logout", null);
+        var response = await _client.PostAsync("api/auth/logout", null, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

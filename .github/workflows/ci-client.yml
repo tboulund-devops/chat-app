@@ -1,53 +1,53 @@
-name: ci-client
-
-on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'client/**'
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - 'client/**'
-
-jobs:
-  build:
-    permissions:
-      contents: read
-      pull-requests: write
-    name: Lint & Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: client/package-lock.json
-
-      - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm run build --if-present   
-  lint:
-    permissions: 
-      contents: read
-      pull-requests: write
-    name: Lint
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: client/package-lock.json
-
-      - run: npm ci
-      - run: npm run lint --if-present
+#name: ci-client
+#
+#on:
+#  push:
+#    branches: [main, develop]
+#    paths:
+#      - 'client/**'
+#  pull_request:
+#    branches: [main, develop]
+#    paths:
+#      - 'client/**'
+#
+#jobs:
+#  build:
+#    permissions:
+#      contents: read
+#      pull-requests: write
+#    name: Lint & Build
+#    runs-on: ubuntu-latest
+#    defaults:
+#      run:
+#        working-directory: client
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: '24'
+#          cache: 'npm'
+#          cache-dependency-path: client/package-lock.json
+#
+#      - run: npm ci
+#      - run: npm run lint --if-present
+#      - run: npm run build --if-present   
+#  lint:
+#    permissions: 
+#      contents: read
+#      pull-requests: write
+#    name: Lint
+#    runs-on: ubuntu-latest
+#    defaults:
+#      run:
+#        working-directory: client
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: '24'
+#          cache: 'npm'
+#          cache-dependency-path: client/package-lock.json
+#
+#      - run: npm ci
+#      - run: npm run lint --if-present

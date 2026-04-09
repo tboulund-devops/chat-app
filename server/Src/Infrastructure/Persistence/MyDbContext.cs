@@ -26,6 +26,7 @@ public class MyDbContext(DbContextOptions<MyDbContext> options) : DbContext(opti
     public DbSet<ChatRoom> ChatRooms => Set<ChatRoom>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ChatRoomMember> ChatRoomMembers => Set<ChatRoomMember>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +80,18 @@ public class MyDbContext(DbContextOptions<MyDbContext> options) : DbContext(opti
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            entity.HasOne(e => e.Recipient)
+                .WithMany()
+                .HasForeignKey(e => e.RecipientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.RecipientId, e.IsRead, e.CreatedAt });
         });
     }
 }

@@ -1,0 +1,47 @@
+services:
+  api:
+    image: ghcr.io/tboulund-devops/incidenttracker-server:staging
+    container_name: incidenttracker-api
+    ports:
+      - "5005:5005"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - Database__PSqlConnectionString=Host=db;Port=5432;Database=${DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD}
+      - Database__RedisConnectionString=redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    image: ghcr.io/tboulund-devops/incidenttracker-client:staging
+    container_name: incidenttracker-client
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    container_name: incidenttracker-db
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: incidenttracker-redis
+    restart: unless-stopped
+
+volumes:
+  pgdata:
