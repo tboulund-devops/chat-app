@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "testcafe opera src/tests/e2e/**/*.js",
+    "test:e2e": "testcafe chrome src/tests/e2e/**/*.js",
     "test:e2e:headless": "testcafe opera:headless src/tests/e2e/**/*.js"
   },
   "dependencies": {
