@@ -1,4 +1,4 @@
-﻿import { Selector } from 'testcafe';
+import { Selector } from 'testcafe';
 
 fixture`Login and chat flow`
     .page`http://localhost:5173`;
