@@ -197,4 +197,212 @@ public class ChatFeatureTests
         Assert.True(result.IsSuccess);
         Assert.Single(result.Dto!);
     }
+
+    // ── GetUserRoomsAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetUserRoomsAsync_ShouldReturnRooms_WhenUserHasRooms()
+    {
+        var room = ChatRoom.Create("MyRoom", UserId, "desc");
+        _roomRepository.GetRoomsForUserAsync(UserId).Returns([room]);
+
+        var result = await _chatFeature.GetUserRoomsAsync(UserId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Dto!);
+    }
+
+    [Fact]
+    public async Task GetUserRoomsAsync_ShouldReturnEmptyList_WhenUserHasNoRooms()
+    {
+        _roomRepository.GetRoomsForUserAsync(UserId).Returns([]);
+
+        var result = await _chatFeature.GetUserRoomsAsync(UserId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Dto!);
+    }
+
+    [Fact]
+    public async Task GetUserRoomsAsync_ShouldReturnFailure_WhenRepositoryThrows()
+    {
+        _roomRepository.GetRoomsForUserAsync(UserId)
+            .Throws(new RepositoryException("DB error"));
+
+        var result = await _chatFeature.GetUserRoomsAsync(UserId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Failed to get rooms", result.Message);
+    }
+
+    // ── EditMessageAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task EditMessageAsync_ShouldReturnSuccess_WhenOwnerEditsOwnMessage()
+    {
+        var messageId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, UserId, "Original");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+        _messageRepository.UpdateAsync(Arg.Any<ChatMessage>()).Returns(true);
+
+        var result = await _chatFeature.EditMessageAsync(UserId, messageId, "Edited");
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task EditMessageAsync_ShouldReturnForbidden_WhenNotOwner()
+    {
+        var messageId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, otherUserId, "Not yours");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+
+        var result = await _chatFeature.EditMessageAsync(UserId, messageId, "Sneaky edit");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+    }
+
+    [Fact]
+    public async Task EditMessageAsync_ShouldReturnFailure_WhenMessageIsDeleted()
+    {
+        var messageId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, UserId, "Deleted msg");
+        message.IsDeleted = true;
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+
+        var result = await _chatFeature.EditMessageAsync(UserId, messageId, "Revive");
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("deleted", result.Message);
+    }
+
+    [Fact]
+    public async Task EditMessageAsync_ShouldReturnNotFound_WhenMessageDoesNotExist()
+    {
+        var messageId = Guid.NewGuid();
+        _messageRepository.FindByIdAsync(messageId)
+            .Throws(new EntityNotFoundException("Message not found"));
+
+        var result = await _chatFeature.EditMessageAsync(UserId, messageId, "Edit");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task EditMessageAsync_ShouldReturnFailure_WhenRepositoryThrows()
+    {
+        var messageId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, UserId, "Original");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+        _messageRepository.UpdateAsync(Arg.Any<ChatMessage>())
+            .Throws(new RepositoryException("DB error"));
+
+        var result = await _chatFeature.EditMessageAsync(UserId, messageId, "Edited");
+
+        Assert.False(result.IsSuccess);
+    }
+
+    // ── DeleteMessageAsync ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteMessageAsync_ShouldReturnSuccess_WhenOwnerDeletesOwnMessage()
+    {
+        var messageId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, UserId, "To delete");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+        _messageRepository.UpdateAsync(Arg.Any<ChatMessage>()).Returns(true);
+
+        var result = await _chatFeature.DeleteMessageAsync(UserId, messageId);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_ShouldSoftDelete_BySettingIsDeletedAndReplacingContent()
+    {
+        var messageId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, UserId, "Secret message");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+        _messageRepository.UpdateAsync(Arg.Any<ChatMessage>()).Returns(true);
+
+        await _chatFeature.DeleteMessageAsync(UserId, messageId);
+
+        await _messageRepository.Received(1).UpdateAsync(
+            Arg.Is<ChatMessage>(m => m.IsDeleted && m.Content == "This message was deleted"));
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_ShouldReturnForbidden_WhenNotOwner()
+    {
+        var messageId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, otherUserId, "Not yours");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+
+        var result = await _chatFeature.DeleteMessageAsync(UserId, messageId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_ShouldReturnNotFound_WhenMessageDoesNotExist()
+    {
+        var messageId = Guid.NewGuid();
+        _messageRepository.FindByIdAsync(messageId)
+            .Throws(new EntityNotFoundException("Message not found"));
+
+        var result = await _chatFeature.DeleteMessageAsync(UserId, messageId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_ShouldReturnFailure_WhenRepositoryThrows()
+    {
+        var messageId = Guid.NewGuid();
+        var message = ChatMessage.Create(RoomId, UserId, "Msg");
+        _messageRepository.FindByIdAsync(messageId).Returns(message);
+        _messageRepository.UpdateAsync(Arg.Any<ChatMessage>())
+            .Throws(new RepositoryException("DB error"));
+
+        var result = await _chatFeature.DeleteMessageAsync(UserId, messageId);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    // ── GetRoomMembersAsync ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetRoomMembersAsync_ShouldReturnMembers_WhenUserIsMember()
+    {
+        _roomRepository.IsMemberAsync(RoomId, UserId).Returns(true);
+        var member = new ChatRoomMember
+        {
+            RoomId = RoomId,
+            UserId = UserId,
+            User = User.Create("Jane", "Doe", "jane@doe.com", [1, 2, 3], RoleType.User)
+        };
+        _roomRepository.GetMembersAsync(RoomId).Returns([member]);
+
+        var result = await _chatFeature.GetRoomMembersAsync(UserId, RoomId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Dto!);
+    }
+
+    [Fact]
+    public async Task GetRoomMembersAsync_ShouldReturnUnauthorized_WhenUserIsNotMember()
+    {
+        _roomRepository.IsMemberAsync(RoomId, UserId).Returns(false);
+
+        var result = await _chatFeature.GetRoomMembersAsync(UserId, RoomId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
+    }
 }
