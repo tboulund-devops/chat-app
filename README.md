@@ -72,9 +72,9 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 *Easter vacation - nothing planned.*
 
 ### Week 15
-**Feature 1:** [...]
+**Feature 1:** UI/UX Registering users
 
-**Feature 2:** [...]
+**Feature 2:** UI/UX Create new room 
 
 ### Week 16
 **Feature 1:** [...]
