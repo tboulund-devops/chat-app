@@ -65,8 +65,14 @@ public class AuthController(IAuthFeature authFeature, AppSettings appSettings) :
             var registerResult = await authFeature.HandleRegisterUser(registerRequest);
             if (registerResult.IsSuccess)
             {
+                if (!registerResult.IsSuccess)
+                {
+                    return BadRequest(registerResult.Message);
+                }
+
                 return Ok(registerResult);
             }
+            
         }
 
         if (User.IsInRole(nameof(RoleType.Crew)))

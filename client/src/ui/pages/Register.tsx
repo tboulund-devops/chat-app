@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {useNavigate, Link, Navigate} from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { authApi, type RegisterRequest } from "../../core/controllers/authApi";
+import { getRegisterFeatureFlag } from '../../core/controllers/featureFlagsRegister'
 
 export default function Register() {
     const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [isRegisterEnabled, setIsRegisterEnabled] = useState<boolean | null>(null)
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
         const { name, value } = e.target;
@@ -96,6 +98,34 @@ export default function Register() {
         } finally {
             setLoading(false);
         }
+    }
+
+    useEffect(() => {
+        let cancelled = false
+
+        void getRegisterFeatureFlag()
+            .then((enabled) => {
+                if (!cancelled) {
+                    setIsRegisterEnabled(enabled)
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setIsRegisterEnabled(false)
+                }
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    if (isRegisterEnabled === null) {
+        return <div>Loading...</div>
+    }
+
+    if (!isRegisterEnabled) {
+        return <Navigate to="/login" replace />
     }
 
     return (

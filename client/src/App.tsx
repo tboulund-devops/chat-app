@@ -3,7 +3,6 @@ import Shell from '../src/ui/layout/Shell'
 import Login from '../src/ui/pages/Login'
 import Register from '../src/ui/pages/Register'
 import Rooms from '../src/ui/pages/Rooms'
-import Dms from '../src/ui/pages/Dms'
 import RoomChat from '../src/ui/pages/RoomChat'
 
 const router = createBrowserRouter([
@@ -15,7 +14,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/rooms" replace /> },
       { path: 'rooms', element: <Rooms /> },
-      { path: 'dms', element: <Dms /> },
       { path: 'rooms/:roomId', element: <RoomChat /> },
     ],
   },
