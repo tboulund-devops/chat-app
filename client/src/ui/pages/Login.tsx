@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, Link } from 'react-router-dom'
 import { Bot } from 'lucide-react'
 import { useAtomValue } from 'jotai'
 import { authAtom } from '../../core/atoms/authAtom'
@@ -29,7 +29,10 @@ export default function Login() {
           <LoginForm />
 
           <p className="mt-6 text-center text-sm text-zinc-500">
-            Don&apos;t have an account? <span className="font-medium">Sign up</span>
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="font-medium text-zinc-900 hover:underline">
+              Sign up
+            </Link>
           </p>
         </div>
       </div>
