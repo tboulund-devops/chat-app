@@ -36,17 +36,7 @@ export default function Sidebar() {
                     >
                         <House className="h-4 w-4" />
                         Rooms
-                    </NavLink>
-
-                    <NavLink
-                        to="/dms"
-                        className={({ isActive }) =>
-                            `${baseClass} ${isActive ? activeClass : inactiveClass}`
-                        }
-                    >
-                        <MessageSquare className="h-4 w-4" />
-                        Direct Messages
-                    </NavLink>
+                    </NavLink>                    
                 </nav>
             </div>
 
