@@ -9,18 +9,13 @@ public class FeatureStateProvider
 
     public FeatureStateProvider()
     {
-        var config = new EdgeFeatureHubConfig("http://featurehub:8085", "be4ae685-6bfd-407d-9323-8f0c103ec2ce/LYjxcSN52vnN2gfqvouuusOC4vmqIy4eoYaj6YLT");
+        var config = new EdgeFeatureHubConfig("http://localhost:8085", "be4ae685-6bfd-407d-9323-8f0c103ec2ce/LYjxcSN52vnN2gfqvouuusOC4vmqIy4eoYaj6YLT");
         config.Init().Wait();
         _config = config;
     }
     
     public bool IsEnabled(string featureKey)
     {
-        /*var context = _config.NewContext()
-            .UserKey("test-user")
-            .Country(StrategyAttributeCountryName.Denmark)
-            .Build().GetAwaiter().GetResult();
-        return (bool)context[featureKey].Value;*/
         return (bool)_config.Repository[featureKey].Value;
     }
 }
