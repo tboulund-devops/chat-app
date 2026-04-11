@@ -1,170 +1,169 @@
-  name: ci-server
-  
-  on:
-    push:
-      branches: [main, develop]
-      paths:
-        - 'server/**'
-    pull_request:
-      branches: [main, develop]
-      paths:
-        - 'server/**'
-  
-  jobs:
-    build:
-      name: Build Server
-      runs-on: ubuntu-latest
-      defaults:
-        run:
-          working-directory: server
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-dotnet@v4
-          with:
-            dotnet-version: '10.0.x'
-        - run: dotnet restore
-        - run: dotnet build -c Release --no-restore
-  
-    test:
-      name: Run Tests and Upload SonarQube Coverage Report
-      runs-on: ubuntu-latest
-      defaults:
-        run:
-          working-directory: server
-      needs: build
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-dotnet@v4
-          with:
-            dotnet-version: '10.0.x'
-        - run: dotnet restore
-  
-        - name: Install ReportGenerator
-          run: dotnet tool install -g dotnet-reportgenerator-globaltool
-  
-        - name: Create appsettings.json for Integration Tests
-          run: |
-            mkdir -p server/Tests/Integration/Config/Json
-            cat > server/Tests/Integration/Config/Json/appsettings.json << 'EOF'
-            {
-              "Jwt": {
-                "Secret": "${{ secrets.JWT_SECRET }}",
-                "Issuer": "https://localhost:5001",
-                "Audience": "https://localhost:5001",
-                "AccessTokenLifetime": 3600,
-                "RefreshTokenLifetime": 1209600
-              },
-              "Cors": {
-                "AllowedOrigins": []
-              },
-              "Database": {
-                "PSqlConnectionString": "",
-                "PSqlDatabase": "IncidentTracker"
-              }
+name: ci-server
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+
+jobs:
+  build:
+    name: Build Server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore
+      - run: dotnet build -c Release --no-restore
+
+  test:
+    name: Run Tests and Upload SonarQube Coverage Report
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Create appsettings.json for Integration Tests
+        run: |
+          mkdir -p server/Tests/Integration/Config/Json
+          cat > server/Tests/Integration/Config/Json/appsettings.json << 'EOF'
+          {
+            "Jwt": {
+              "Secret": "${{ secrets.JWT_SECRET }}",
+              "Issuer": "https://localhost:5001",
+              "Audience": "https://localhost:5001",
+              "AccessTokenLifetime": 3600,
+              "RefreshTokenLifetime": 1209600
+            },
+            "Cors": {
+              "AllowedOrigins": []
+            },
+            "Database": {
+              "PSqlConnectionString": "",
+              "PSqlDatabase": "IncidentTracker"
             }
-            EOF
-  
-        - name: Run Unit and Integration Tests with Coverage
-          run: |
-            echo "Running Unit Tests..."
-            dotnet test --project ./Tests/Unit/Unit.csproj \
-              --configuration Release \
-              --coverage \
-              --coverage-output ./Unit/Coverage/coverage.cobertura.xml \
-              --coverage-output-format cobertura
-  
-            echo "Running Integration Tests..."
-            dotnet test --project ./Tests/Integration/Integration.csproj \
-              --configuration Release \
-              --coverage \
-              --coverage-output ./Integration/Coverage/coverage.cobertura.xml \
-              --coverage-output-format cobertura
-  
-        - name: Copy coverage to fixed folder
-          run: |
-            mkdir -p Coverage/Unit Coverage/Integration
-  
-            # Robust copy: finds any coverage.cobertura.xml under TestResults (handles GUID folders)
-            find ./Tests/Unit -type f -name "coverage.cobertura.xml" -exec cp {} Coverage/Unit/coverage.cobertura.xml \;
-            find ./Tests/Integration -type f -name "coverage.cobertura.xml" -exec cp {} Coverage/Integration/coverage.cobertura.xml \;
-  
-            # Debug: show what we actually copied
-            ls -la Coverage/Unit/
-            ls -la Coverage/Integration/
-            cat Coverage/Unit/coverage.cobertura.xml || echo "Unit coverage file missing!"
-            cat Coverage/Integration/coverage.cobertura.xml || echo "Integration coverage file missing!"
-        - name: Generate coverage report
-          run: |
-            reportgenerator \
-              -reports:"Coverage/Unit/coverage.cobertura.xml;Coverage/Integration/coverage.cobertura.xml" \
-              -targetdir:Coverage/Report \
-              -reporttypes:SonarQube
-  
-        - name: Upload SonarQube Coverage Report as Artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: sonar-coverage
-            path: ./server/Coverage/Report/SonarQube.xml
-            overwrite: true
-  
-    sonarqube:
-      name: Run SonarQube Analysis
-      runs-on: ubuntu-latest
-      needs: test
-  
-      steps:
-        - uses: actions/checkout@v4
-          with:
-            fetch-depth: 0  # Recommended for full Git history (helps SonarQube detect branches, etc.)
-  
-        - name: Download SonarQube Report Artifact
-          uses: actions/download-artifact@v4
-          with:
-            name: sonar-coverage
-  
-        - name: Debug downloaded files
-          run: |
-            echo "=== Current directory contents ==="
-            ls -laR .
-            
-        # Optional: Restore dependencies if needed for build context
-        # But note: SonarScanner doesn't require a full build *if* you only care about coverage + analysis of sources.
-        - name: Setup .NET SDK
-          uses: actions/setup-dotnet@v4
-          with:
-            dotnet-version: '10.0.x'
-  
-        - name: Install SonarScanner CLI (global tool)
-          run: |
-            # Ensure idempotent install — skip if already installed
-            which dotnet-sonarscanner || dotnet tool install --global dotnet-sonarscanner
-  
-        - name: Start SonarQube Analysis
-          env:
-            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          run: |
-            # Ensure coverage report path is relative to repo root (or absolute)
-            dotnet sonarscanner begin \
-              /k:"IncidentTracker" \
-              /d:sonar.host.url="$SONAR_HOST_URL" \
-              /d:sonar.token="$SONAR_TOKEN" \
-              /d:sonar.coverageReportPaths="SonarQube.xml" \
-              /d:sonar.qualitygate.wait=true \
-              /d:sonar.qualitygate.timeout=300
-  
-        - name: Build For SonarQube Analysis
+          }
+          EOF
+
+      - name: Run Unit and Integration Tests with Coverage
+        run: |
+          echo "Running Unit Tests..."
+          dotnet test --project ./Tests/Unit/Unit.csproj \
+            --configuration Release \
+            --coverage \
+            --coverage-output ./Unit/Coverage/coverage.cobertura.xml \
+            --coverage-output-format cobertura
+
+          echo "Running Integration Tests..."
+          dotnet test --project ./Tests/Integration/Integration.csproj \
+            --configuration Release \
+            --coverage \
+            --coverage-output ./Integration/Coverage/coverage.cobertura.xml \
+            --coverage-output-format cobertura
+
+      - name: Copy coverage to fixed folder
+        run: |
+          mkdir -p Coverage/Unit Coverage/Integration
+
+          # Robust copy: finds any coverage.cobertura.xml under TestResults (handles GUID folders)
+          find ./Tests/Unit -type f -name "coverage.cobertura.xml" -exec cp {} Coverage/Unit/coverage.cobertura.xml \;
+          find ./Tests/Integration -type f -name "coverage.cobertura.xml" -exec cp {} Coverage/Integration/coverage.cobertura.xml \;
+
+          # Debug: show what we actually copied
+          ls -la Coverage/Unit/
+          ls -la Coverage/Integration/
+          cat Coverage/Unit/coverage.cobertura.xml || echo "Unit coverage file missing!"
+          cat Coverage/Integration/coverage.cobertura.xml || echo "Integration coverage file missing!"
+      - name: Generate coverage report
+        run: |
+          reportgenerator \
+            -reports:"Coverage/Unit/coverage.cobertura.xml;Coverage/Integration/coverage.cobertura.xml" \
+            -targetdir:Coverage/Report \
+            -reporttypes:SonarQube
+
+      - name: Upload SonarQube Coverage Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-coverage
+          path: ./server/Coverage/Report/SonarQube.xml
+          overwrite: true
+
+  sonarqube:
+    name: Run SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Recommended for full Git history (helps SonarQube detect branches, etc.)
+
+      - name: Download SonarQube Report Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sonar-coverage
+
+      - name: Debug downloaded files
+        run: |
+          echo "=== Current directory contents ==="
+          ls -laR .
       
-          run: |
-            echo "=== Before build: Current directory contents ==="
-            ls -laR .
-            # Restore + build to ensure all sources are compiled & analyzed
-            dotnet restore ./server --no-cache
-            dotnet build ./server -c Release --no-restore --verbosity minimal
-  
-        - name: Complete SonarQube Analysis
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          run: |
-            dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
-  
+      # Optional: Restore dependencies if needed for build context
+      # But note: SonarScanner doesn't require a full build *if* you only care about coverage + analysis of sources.
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install SonarScanner CLI (global tool)
+        run: |
+          # Ensure idempotent install — skip if already installed
+          which dotnet-sonarscanner || dotnet tool install --global dotnet-sonarscanner
+
+      - name: Start SonarQube Analysis
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          # Ensure coverage report path is relative to repo root (or absolute)
+          dotnet sonarscanner begin \
+            /k:"IncidentTracker" \
+            /d:sonar.host.url="$SONAR_HOST_URL" \
+            /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.coverageReportPaths="SonarQube.xml" \
+            /d:sonar.qualitygate.wait=true \
+            /d:sonar.qualitygate.timeout=300
+
+      - name: Build For SonarQube Analysis
+        
+        run: |
+          echo "=== Before build: Current directory contents ==="
+          ls -laR .
+          # Restore + build to ensure all sources are compiled & analyzed
+          dotnet restore ./server --no-cache
+          dotnet build ./server -c Release --no-restore --verbosity minimal
+
+      - name: Complete SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
