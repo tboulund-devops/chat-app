@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.Services.FeatureFlags;
 using Domain.Entities;
@@ -11,7 +12,7 @@ namespace Application.Features.Auth.Register;
 public sealed class RegisterUserHandler(
     IUserRepository userRepository,
     IHashingUtils hashingUtils,
-    FeatureStateProvider featureStateProvider
+    IFeatureStateProvider featureStateProvider
 ) : ICommandHandler<RegisterUserCommand, Result>
 {
     public async Task<Result> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
