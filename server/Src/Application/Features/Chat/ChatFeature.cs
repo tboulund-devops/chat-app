@@ -3,6 +3,7 @@ using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Chat;
 using Application.DTOs.Entities;
+using Application.Services;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
@@ -12,7 +13,8 @@ namespace Application.Features.Chat;
 public class ChatFeature(
     IChatMessageRepository messageRepository,
     IChatRoomRepository roomRepository,
-    INotificationService notificationService
+    INotificationService notificationService,
+    IFeatureStateProvider featureStateProvider
 ) : IChatFeature
 {
     public async Task<Result<ChatMessageDto>> CreateMessageAsync(Guid userId, SendMessageRequest request)
@@ -83,6 +85,9 @@ public class ChatFeature(
 
     public async Task<Result<ChatRoomDto>> CreateRoomAsync(Guid userId, CreateRoomRequest request)
     {
+        
+        if (!featureStateProvider.IsEnabled(("CreateChatRooms")))
+            return Result<ChatRoomDto>.Failure("Chat rooms are currently disabled.", ResultStatus.Failure);
         try
         {
             var room = ChatRoom.Create(request.Name, userId, request.Description);

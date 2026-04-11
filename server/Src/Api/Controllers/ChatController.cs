@@ -57,11 +57,11 @@ public class ChatController(
             await backplane.SubscribeUserAsync(connectionId, userId);
             
             // Subscribe to rooms
-            var clientRooms = await roomRepository.GetRoomsForUserAsync(userId);
-            foreach (var room in clientRooms)
+            var clientRooms = (await roomRepository.GetRoomsForUserAsync(userId)).Select(r => r.Id);
+            foreach (var roomId in clientRooms)
             {
-                await backplane.AddToGroupAsync(connectionId, room.Id);
-                await WriteSseEvent("Joined room", $"joined_room: {room.Id}", cancellationToken);
+                await backplane.AddToGroupAsync(connectionId, roomId);
+                await WriteSseEvent("Joined room", $"joined_room: {roomId}", cancellationToken);
             }
             
             // Optional heartbeat
@@ -112,7 +112,8 @@ public class ChatController(
         try
         {
             var result = await chatFeature.CreateMessageAsync(GetUserId(), request);
-            await backplane.SendToGroupAsync(request.RoomId, request);
+            if (result.Status == ResultStatus.Success)
+                await backplane.SendToGroupAsync(request.RoomId, request);
             return result.Status switch
             {
                 ResultStatus.Success => Ok(result.Dto),
@@ -164,8 +165,11 @@ public class ChatController(
             return result.Status switch
             {
                 ResultStatus.Failure => BadRequest(result),
-                ResultStatus.Success => CreatedAtAction(nameof(GetMessages), new { roomId = result.Dto!.Id }, result.Message),
-                _ => BadRequest(result)
+                ResultStatus.Success => CreatedAtAction(
+                    nameof(GetMessages), 
+                    new { roomId = result.Dto!.Id }, 
+                    result.Dto  // return the DTO, not result.Message
+                ),
             };
         }
         catch (UnauthorizedAccessException)

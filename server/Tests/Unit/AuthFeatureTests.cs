@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Responses;
 using Application.Features.Auth;
@@ -19,7 +20,7 @@ namespace Unit;
 public class AuthFeatureTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
-    private readonly FeatureStateProvider _featureStateProvider = Substitute.For<FeatureStateProvider>();
+    private readonly IFeatureStateProvider _featureStateProvider = Substitute.For<FeatureStateProvider>();
     
     private readonly AuthFeature _authFeature;
 

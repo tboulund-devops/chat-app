@@ -1,5 +1,7 @@
 ﻿using Domain.Entities;
 
+namespace Application.DTOs.Chat;
+
 public class RoomMemberDto
 {
     public Guid UserId { get; init; }

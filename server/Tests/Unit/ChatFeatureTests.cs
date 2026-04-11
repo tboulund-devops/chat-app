@@ -16,6 +16,7 @@ public class ChatFeatureTests
     private readonly IChatMessageRepository _messageRepository = Substitute.For<IChatMessageRepository>();
     private readonly IChatRoomRepository _roomRepository = Substitute.For<IChatRoomRepository>();
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
+    private readonly IFeatureStateProvider _featureStateProvider = Substitute.For<IFeatureStateProvider>();
     private readonly ChatFeature _chatFeature;
 
     private static readonly Guid UserId = Guid.NewGuid();
@@ -23,7 +24,8 @@ public class ChatFeatureTests
 
     public ChatFeatureTests()
     {
-        _chatFeature = new ChatFeature(_messageRepository, _roomRepository, _notificationService);
+        _featureStateProvider.IsEnabled(Arg.Any<string>()).Returns(true);
+        _chatFeature = new ChatFeature(_messageRepository, _roomRepository, _notificationService, _featureStateProvider);
     }
 
     // ── CreateMessageAsync ───────────────────────────────────────────────
