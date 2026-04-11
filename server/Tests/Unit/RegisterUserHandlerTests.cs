@@ -1,4 +1,5 @@
-﻿using Application.Features.Auth.Register;
+﻿using Application.Common.Interfaces.Services;
+using Application.Features.Auth.Register;
 using Application.Common.Results;
 using Application.Services.FeatureFlags;
 using Domain.Entities;
@@ -16,10 +17,11 @@ public class RegisterUserHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IHashingUtils _hashingUtils = Substitute.For<IHashingUtils>();
     private readonly RegisterUserHandler _handler;
-    private readonly FeatureStateProvider _featureStateProvider = Substitute.For<FeatureStateProvider>();
+    private readonly IFeatureStateProvider _featureStateProvider = Substitute.For<IFeatureStateProvider>();
 
     public RegisterUserHandlerTests()
     {
+        _featureStateProvider.IsEnabled(Arg.Any<string>()).Returns(true);
         _handler = new RegisterUserHandler(_userRepository, _hashingUtils, _featureStateProvider);
     }
 

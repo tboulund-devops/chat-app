@@ -1,9 +1,10 @@
+using Application.Common.Interfaces.Services;
 using FeatureHubSDK;
 using IO.FeatureHub.SSE.Model;
 
 namespace Application.Services.FeatureFlags;
 
-public class FeatureStateProvider
+public class FeatureStateProvider : IFeatureStateProvider
 {
     private readonly EdgeFeatureHubConfig _config;
 

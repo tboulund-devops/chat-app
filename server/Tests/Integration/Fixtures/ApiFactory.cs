@@ -1,4 +1,5 @@
 ﻿using Api;
+using Application.Common.Interfaces.Services;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -68,6 +69,10 @@ public sealed class ApiFactory : WebApplicationFactory<ApiMaker>, IAsyncLifetime
 
             services.AddDbContext<MyDbContext>(options =>
                 options.UseNpgsql(_postgres.GetConnectionString()));
+            var featureDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IFeatureStateProvider));
+            if (featureDescriptor != null) services.Remove(featureDescriptor);
+
+            services.AddScoped<IFeatureStateProvider>(_ => new AlwaysEnabledFeatureStateProvider());
 
             // Replace Redis with in-memory SSE to avoid needing a real Redis
             // (assuming ISimpleSse has an in-memory implementation already — InMemorySimpleSse)

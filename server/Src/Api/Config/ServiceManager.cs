@@ -199,7 +199,7 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         services.AddSingleton<IHashingUtils, Infrastructure.Utils.HashingUtils>();
         
         // Feature flags
-        services.AddSingleton<FeatureStateProvider>();
+        services.AddSingleton<IFeatureStateProvider, FeatureStateProvider>();
         Console.WriteLine("Controllers and Features configuration loaded.");
     }
 
