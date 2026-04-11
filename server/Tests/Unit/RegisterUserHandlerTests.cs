@@ -1,5 +1,6 @@
 ﻿using Application.Features.Auth.Register;
 using Application.Common.Results;
+using Application.Services.FeatureFlags;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
@@ -15,10 +16,11 @@ public class RegisterUserHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IHashingUtils _hashingUtils = Substitute.For<IHashingUtils>();
     private readonly RegisterUserHandler _handler;
+    private readonly FeatureStateProvider _featureStateProvider = Substitute.For<FeatureStateProvider>();
 
     public RegisterUserHandlerTests()
     {
-        _handler = new RegisterUserHandler(_userRepository, _hashingUtils);
+        _handler = new RegisterUserHandler(_userRepository, _hashingUtils, _featureStateProvider);
     }
 
     private static RegisterUserCommand MakeCommand(string email = "test@test.com") => new()
