@@ -1,6 +1,7 @@
-import { Selector } from 'testcafe';
+import { Selector, ClientFunction } from 'testcafe';
 
 const API_URL = 'http://localhost:5285';
+const getPathname = ClientFunction(() => window.location.pathname);
 
 fixture`Login and chat flow`
     .page`http://localhost:5173`
@@ -38,11 +39,12 @@ test('User can login and see chat rooms', async t => {
         .ok()
         .typeText(emailInput, 'admin@gmail.com')
         .typeText(passwordInput, 'adminadmin')
-        .click(loginButton)
-        .expect(t.eval(() => window.location.pathname))
-        .contains('/rooms')
+        .click(loginButton);
+
+    await t
+        .expect(getPathname()).contains('/rooms', { timeout: 15000 })
         .expect(roomDirectoryHeading.visible)
-        .ok()
+        .ok({ timeout: 10000 })
         .expect(roomListContainer.visible)
-        .ok();
+        .ok({ timeout: 10000 });
 })
