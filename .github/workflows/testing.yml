@@ -71,8 +71,14 @@ jobs:
           npx wait-on http://localhost:5173 --timeout 120000 --interval 3000
           npx wait-on http://localhost:5285/health --timeout 120000 --interval 3000
 
+      - name: Seed test user
+        run: |
+          curl -sf -X POST http://localhost:5285/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"firstName":"Admin","lastName":"User","email":"admin@gmail.com","password":"adminadmin","role":0}'
+
       - name: Run E2E Tests
-        run: testcafe chrome:headless tests/e2e/**/*.js
+        run: testcafe "chrome:headless --no-sandbox --disable-gpu" tests/e2e/**/*.js
 
 
   performance-test:
