@@ -34,6 +34,8 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         
         ConfigureAppSettings();
 
+        services.AddHealthChecks();
+
         ConfigureDbContext();
 
         ConfigureRepositories();

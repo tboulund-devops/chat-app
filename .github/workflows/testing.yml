@@ -10,7 +10,31 @@ jobs:
   e2e-test:
     name: Run End-to-End Tests
     runs-on: ubuntu-latest
-    
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: Incident_Tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +45,9 @@ jobs:
 
       - name: Start Server
         working-directory: server
+        env:
+          Database__PSqlConnectionString: "Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres"
+          Database__RedisConnectionString: "localhost:6379"
         run: ASPNETCORE_URLS=http://localhost:5285 dotnet run --project Src/Api/ &
 
       - name: Setup Node
@@ -53,6 +80,30 @@ jobs:
     name: Run Performance Tests
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: Incident_Tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -63,6 +114,9 @@ jobs:
 
       - name: Start Server
         working-directory: server
+        env:
+          Database__PSqlConnectionString: "Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres"
+          Database__RedisConnectionString: "localhost:6379"
         run: |
           ASPNETCORE_URLS=http://localhost:5285 dotnet run --project Src/Api/ &
           sleep 10

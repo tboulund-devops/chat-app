@@ -55,6 +55,7 @@ public static class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        app.MapHealthChecks("/health");
 
         // Apply pending migrations automatically
         using (var scope = app.Services.CreateScope())
