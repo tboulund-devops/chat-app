@@ -34,7 +34,7 @@ jobs:
 
       - name: Start React Frontend
         working-directory: client
-        run: npm run dev
+        run: npm run dev &
 
       - name: Install wait-on
         run: npm install -g wait-on
