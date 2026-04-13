@@ -72,7 +72,7 @@ jobs:
           npx wait-on http://localhost:5285/health --timeout 120000 --interval 3000
 
       - name: Run E2E Tests
-        run: testcafe chrome:headless src/tests/e2e/**/*.js
+        run: testcafe chrome:headless tests/e2e/**/*.js
 
 
   performance-test:
