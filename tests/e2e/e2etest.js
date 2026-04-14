@@ -19,8 +19,8 @@ test('User can login and see chat rooms', async t => {
         .expect(passwordInput.exists).ok({ timeout: 10000 });
 
     await t
-        .typeText(emailInput, 'string@wp.pl')
-        .typeText(passwordInput, 'string')
+        .typeText(emailInput, 'admin@gmail.com')
+        .typeText(passwordInput, 'adminadmin')
         .click(loginButton);
 
     // Wait for the Room Directory heading — Selector-based waiting is more
