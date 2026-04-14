@@ -46,6 +46,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Restore .NET dependencies
+        working-directory: server
+        run: dotnet restore
+
       - name: Install EF Core tools
         run: dotnet tool install --global dotnet-ef
 
@@ -110,6 +114,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore .NET dependencies
+        working-directory: server
+        run: dotnet restore
 
       - name: Install EF Core tools
         run: dotnet tool install --global dotnet-ef
