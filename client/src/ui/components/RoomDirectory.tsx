@@ -5,12 +5,15 @@ import { useNavigate } from 'react-router-dom'
 import { chatApi } from '../../core/controllers/chatApi'
 import { allchatRoomsAtom, chatRoomsAtom } from '../../core/atoms/chatAtoms'
 import RoomCard from './RoomCard'
+import CreateRoomModal from './CreateRoomModal'
+import {ChatRoom} from "../../core/types/ChatRoom";
 
 export default function RoomDirectory() {
     const navigate = useNavigate()
     const [myRooms, setMyRooms] = useAtom(chatRoomsAtom)
     const [allRooms, setAllRooms] = useAtom(allchatRoomsAtom)
     const [query, setQuery] = useState('')
+    const [showModal, setShowModal] = useState(false)
 
     useEffect(() => {
         const loadRooms = async () => {
@@ -19,14 +22,12 @@ export default function RoomDirectory() {
                     chatApi.getMyRooms(),
                     chatApi.getAllRooms(),
                 ])
-
                 setMyRooms(mine)
                 setAllRooms(all)
             } catch (error) {
                 console.error('Failed to load rooms:', error)
             }
         }
-
         loadRooms()
     }, [setMyRooms, setAllRooms])
 
@@ -52,17 +53,32 @@ export default function RoomDirectory() {
         navigate(`/rooms/${roomId}`)
     }
 
+    const handleRoomCreated = (room: ChatRoom) => {
+        setAllRooms((prev) => [room, ...prev])  // appears in directory immediately
+        setMyRooms((prev) => [room, ...prev])   // creator is already a member
+        setShowModal(false)
+        navigate(`/rooms/${room.id}`)           // take them straight into the room
+    }
+
     return (
         <div className="mx-auto max-w-6xl px-6 py-8">
+            {showModal && (
+                <CreateRoomModal
+                    onClose={() => setShowModal(false)}
+                    onCreated={handleRoomCreated}
+                />
+            )}
+
             <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-900">Room Directory</h1>
-                    <p className="mt-1 text-sm text-zinc-500">
-                        Discover and join communities.
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-500">Discover and join communities.</p>
                 </div>
 
-                <button className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
+                >
                     + Create Room
                 </button>
             </div>

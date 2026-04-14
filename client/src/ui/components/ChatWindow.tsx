@@ -26,69 +26,59 @@ export default function ChatWindow({ roomId, room }: Props) {
 
     const title = useMemo(() => room?.name ?? 'Room', [room])
 
+    // 1. Fetch current user once
     useEffect(() => {
         authApi.me().then(setCurrentUser).catch(console.error)
     }, [])
 
-    const loadMessages = async () => {
-        if (!roomId) return
-
-        try {
-            const data = await chatApi.getRoomMessages(roomId)
-            setMessages(data)
-        } catch (error) {
-            console.error('Failed to load messages:', error)
-        }
-    }
-
+    // 2. Load message history when room changes
     useEffect(() => {
         if (!roomId) return
-
-        let cancelled = false
-
         chatApi.getRoomMessages(roomId)
-            .then((data) => {
-                if (!cancelled) setMessages(data)
-            })
+            .then(setMessages)
             .catch(console.error)
-
-        return () => {
-            cancelled = true
-        }
     }, [roomId])
 
+    // 3. Single persistent SSE connection for the lifetime of the component
+    useEffect(() => {
+        const es = new EventSource('/api/chat/stream', { withCredentials: true })
+        eventSourceRef.current = es
+
+        es.onerror = (error) => console.error('SSE connection error:', error)
+
+        return () => {
+            es.close()
+            eventSourceRef.current = null
+        }
+    }, [])
+
+    // 4. Re-register room listener when roomId changes, without touching the connection
     useEffect(() => {
         if (!roomId) return
 
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close()
-            eventSourceRef.current = null
+        const es = eventSourceRef.current
+        if (!es) return
+
+        const handleRoomMessage = (event: MessageEvent) => {
+            try {
+                const message = JSON.parse(event.data) as ChatMessage
+                if (message.roomId !== roomId) return  // ignore other rooms
+                setMessages(prev => [...prev, message])
+            } catch {
+                console.error('Failed to parse SSE message:', event.data)
+            }
         }
 
-        const es = new EventSource('/api/chat/stream', { withCredentials: true })
-
-        const handleRoomMessage = () => {
-            loadMessages().catch(console.error)
-        }
-
-        es.addEventListener(roomId, handleRoomMessage)
-        eventSourceRef.current = es
-
-        es.onerror = (error) => {
-            console.error('SSE connection error:', error)
-        }
+        es.addEventListener('message', handleRoomMessage)
 
         return () => {
             es.removeEventListener(roomId, handleRoomMessage)
-            es.close()
-            eventSourceRef.current = null
         }
     }, [roomId])
 
     const handleSend = async () => {
         const trimmed = text.trim()
         if (!trimmed) return
-
         try {
             await chatApi.sendMessage(roomId, trimmed)
             setText('')
@@ -100,11 +90,6 @@ export default function ChatWindow({ roomId, room }: Props) {
 
     const handleImageUpload = async (file: File) => {
         try {
-            // Waiting for backend API, fx
-            // await chatApi.sendImageMessage(roomId, file)
-
-            // Temporary fallback:
-            // send image name as text until backend file upload is ready
             await chatApi.sendMessage(roomId, `[Image] ${file.name}`)
         } catch (error) {
             console.error('Image upload failed:', error)
@@ -125,7 +110,9 @@ export default function ChatWindow({ roomId, room }: Props) {
                 <MessageList
                     messages={messages}
                     currentUser={currentUser}
-                    onMessageChanged={loadMessages}
+                    onMessageChanged={() =>
+                        chatApi.getRoomMessages(roomId).then(setMessages).catch(console.error)
+                    }
                 />
 
                 {showEmojiPicker && (

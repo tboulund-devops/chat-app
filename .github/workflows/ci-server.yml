@@ -126,7 +126,7 @@ jobs:
         run: |
           echo "=== Current directory contents ==="
           ls -laR .
-          
+      
       # Optional: Restore dependencies if needed for build context
       # But note: SonarScanner doesn't require a full build *if* you only care about coverage + analysis of sources.
       - name: Setup .NET SDK
@@ -154,7 +154,7 @@ jobs:
             /d:sonar.qualitygate.timeout=300
 
       - name: Build For SonarQube Analysis
-    
+        
         run: |
           echo "=== Before build: Current directory contents ==="
           ls -laR .
@@ -167,4 +167,3 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
-

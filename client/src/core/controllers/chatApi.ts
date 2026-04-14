@@ -53,6 +53,18 @@ export const chatApi = {
       throw new Error(err.message || 'Failed to fetch all rooms');
     });
   },
+  
+  createRoom: async (name: string, description?: string): Promise<ChatRoom> => {
+    return await api<ChatRoom>(`${endpoint}/rooms`, {
+      init: {
+        method: 'POST',
+        body: JSON.stringify({name, description})
+      },
+    }).catch((err: any) => {
+      console.log("Failed to create room", err);
+      throw new Error(err.message || "Failed to create room")
+    });
+  },
 
   joinRoom: async (roomId: string) => {
     return api(`/api/chat/rooms/${roomId}/join`, { init: { method: "POST" }});

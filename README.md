@@ -1,6 +1,6 @@
-# IncidentTracker
+# Chat App
 
-We are working on an incident tracker, a software used to record, update and monitor events or issues as they happen. An admin creates and manages these incident reports and the users can view their status in real time.
+We are working on a chat application, focused on CI/CD with git flow branching strategy and left shift testing.
 
 ## Tech-stack
 
