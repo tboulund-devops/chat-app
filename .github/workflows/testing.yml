@@ -46,6 +46,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
       - name: Apply database migrations
         working-directory: server
         run: dotnet ef database update --project Src/Infrastructure/ --startup-project Src/Api/
@@ -107,6 +110,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Apply database migrations
+        working-directory: server
+        run: dotnet ef database update --project Src/Infrastructure/ --startup-project Src/Api/
 
       - name: Start Server
         working-directory: server
