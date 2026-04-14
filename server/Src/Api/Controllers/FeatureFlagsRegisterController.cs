@@ -1,11 +1,11 @@
-using Application.Services.FeatureFlags;
+using Application.Common.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/features")]
-public class FeatureFlagsRegisterController(FeatureStateProvider featureStateProvider) : ControllerBase
+public class FeatureFlagsRegisterController(IFeatureStateProvider featureStateProvider) : ControllerBase
 {
     [HttpGet("register-user")]
     public IActionResult GetRegisterUserFlag()

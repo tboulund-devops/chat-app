@@ -25,15 +25,6 @@ public class AuthController(IAuthFeature authFeature, AppSettings appSettings) :
 
         var loginResult = await authFeature.HandleLogin(loginRequest);
 
-        if (loginResult.Status != ResultStatus.Success)
-        {
-            return loginResult.Status switch
-            {
-                ResultStatus.Unauthorized => Unauthorized(),
-                ResultStatus.Failure => BadRequest(),
-                _ => BadRequest()
-            };
-        }
         // Only append cookies on success, when Dto is guaranteed non-null
         var cookieOptionsAccess = CookieHelper.CreateAccessTokenCookieOptions(appSettings.JwtSettings.AccessTokenLifetime);
         var cookieOptionsRefresh = CookieHelper.CreateRefreshTokenCookieOptions(appSettings.JwtSettings.RefreshTokenLifetime);

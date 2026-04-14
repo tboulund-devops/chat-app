@@ -56,25 +56,7 @@ public static class Program
         app.UseAuthorization();
         app.MapControllers();
         app.MapHealthChecks("/health");
-
-        // Apply pending migrations automatically
-        using (var scope = app.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
-            await dbContext.Database.MigrateAsync();
-            // var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
-            // var migrations = pendingMigrations as string[] ?? pendingMigrations.ToArray();
-            // if (migrations.Length != 0)
-            // {
-            //     Console.WriteLine($"[DB] Applying {migrations.Length} pending migration(s)...");
-            //     await dbContext.Database.MigrateAsync();
-            //     Console.WriteLine("[DB] ✓ Migrations applied successfully");
-            // }
-            // else
-            // {
-            //     Console.WriteLine("[DB] ✓ Database schema is up to date");
-            // }
-        }
+        
         
         await app.RunAsync();
     }
