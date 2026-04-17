@@ -14,7 +14,7 @@ public class FeatureStateProvider : IFeatureStateProvider
         {
             var config = new EdgeFeatureHubConfig(
                 "http://localhost:8085",
-                "be4ae685-6bfd-407d-9323-8f0c103ec2ce/LYjxcSN52vnN2gfqvouuusOC4vmqIy4eoYaj6YLT"
+                "5f184206-7bd1-4dda-a1c3-c5b811d312f5/WQIqKZDCQ9KeEHRYwM8tmtVApR5vbeO8nysmeR5i"
             );
             if (config.Init().Wait(TimeSpan.FromSeconds(5)))
                 _config = config;
