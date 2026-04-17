@@ -25,23 +25,21 @@ public class AuthController(IAuthFeature authFeature, AppSettings appSettings) :
 
         var loginResult = await authFeature.HandleLogin(loginRequest);
 
-        // Only append cookies on success, when Dto is guaranteed non-null
+        if (!loginResult.IsSuccess)
+            return loginResult.Status switch
+            {
+                ResultStatus.Unauthorized => Unauthorized(),
+                ResultStatus.Failure => BadRequest(),
+                _ => StatusCode(500)
+            };
+
         var cookieOptionsAccess = CookieHelper.CreateAccessTokenCookieOptions(appSettings.JwtSettings.AccessTokenLifetime);
         var cookieOptionsRefresh = CookieHelper.CreateRefreshTokenCookieOptions(appSettings.JwtSettings.RefreshTokenLifetime);
 
         Response.Cookies.Append("accessToken", loginResult.Dto!.AccessToken, cookieOptionsAccess);
         Response.Cookies.Append("refreshToken", loginResult.Dto!.RefreshToken!, cookieOptionsRefresh);
-        
-        
-        return loginResult.Status switch
-        {
-            ResultStatus.Unauthorized => Unauthorized(),
-            ResultStatus.Failure => BadRequest(),
-            ResultStatus.Success => Ok(loginResult.Dto.User),
-            // ResultStatus.Forbidden => BadRequest(loginResponseDto),
-            // ResultStatus.NotFound => BadRequest(loginResponseDto),
-            // _ => throw new ArgumentOutOfRangeException()
-        };
+
+        return Ok(loginResult.Dto.User);
     }
 
     [HttpPost("register")]
