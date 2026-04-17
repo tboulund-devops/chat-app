@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LogOut, Moon, Bell } from 'lucide-react'
+import { LogOut, Bell } from 'lucide-react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { authAtom } from '../../core/atoms/authAtom'
 import { authApi } from '../../core/controllers/authApi'
@@ -96,10 +96,7 @@ export default function Topbar() {
                     )}
                 </div>
 
-                {/* Moon */}
-                <button className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100">
-                    <Moon className="h-4 w-4" />
-                </button>
+
 
                 {/* Logout */}
                 <button
