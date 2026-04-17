@@ -75,13 +75,3 @@ Data is stored in Neon.com in PostgreSQL (WIP)
 **Feature 1:** UI/UX Registering users
 
 **Feature 2:** UI/UX Create new room 
-
-### Week 16
-**Feature 1:** [...]
-
-**Feature 2:** [...]
-
-### Week 17
-**Feature 1:** [...]
-
-**Feature 2:** [...]
