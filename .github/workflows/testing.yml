@@ -1,0 +1,156 @@
+﻿name: Testing Pipeline
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  NODE_VERSION: "20"
+  SERVER_URL: "http://localhost:5285"
+  CLIENT_URL: "http://localhost:5173"
+  Database__PSqlConnectionString: "Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres"
+
+jobs:
+  e2e-test:
+    name: Run End-to-End Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: Incident_Tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore .NET dependencies
+        working-directory: server
+        run: dotnet restore
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Apply database migrations
+        working-directory: server
+        run: dotnet ef database update --project Src/Infrastructure/ --startup-project Src/Api/
+
+      - name: Start Server
+        working-directory: server
+        env:
+          Database__PSqlConnectionString: ${{ env.Database__PSqlConnectionString }}
+        run: ASPNETCORE_URLS=${{ env.SERVER_URL }} dotnet run --project Src/Api/ &
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Start React Frontend
+        working-directory: client
+        run: npm run dev &
+
+      - name: Install wait-on and TestCafe
+        run: npm install -g wait-on testcafe
+
+      - name: Wait for services to be ready
+        run: |
+          wait-on ${{ env.CLIENT_URL }} --timeout 120000 --interval 3000
+          wait-on ${{ env.SERVER_URL }}/health --timeout 120000 --interval 3000
+
+      - name: Seed test user
+        run: |
+          curl -sf -X POST ${{ env.SERVER_URL }}/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"firstName":"Admin","lastName":"User","email":"admin@gmail.com","password":"adminadmin","role":0}'
+
+      - name: Run E2E Tests
+        run: testcafe "chrome:headless --no-sandbox --disable-gpu" tests/e2e/**/*.js
+
+  performance-test:
+    name: Run Performance Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: Incident_Tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore .NET dependencies
+        working-directory: server
+        run: dotnet restore
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Apply database migrations
+        working-directory: server
+        run: dotnet ef database update --project Src/Infrastructure/ --startup-project Src/Api/
+
+      - name: Start Server
+        working-directory: server
+        env:
+          Database__PSqlConnectionString: ${{ env.Database__PSqlConnectionString }}
+        run: ASPNETCORE_URLS=${{ env.SERVER_URL }} dotnet run --project Src/Api/ &
+
+      - name: Wait for server to be ready
+        run: npx wait-on ${{ env.SERVER_URL }}/health --timeout 120000 --interval 3000
+
+      - name: Seed test data
+        run: |
+          curl -sf -X POST ${{ env.SERVER_URL }}/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"firstName":"Admin","lastName":"User","email":"admin@gmail.com","password":"adminadmin","role":0}'
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run Performance Tests
+        env:
+          BASE_URL: ${{ env.SERVER_URL }}
+        run: k6 run server/Tests/performance/load-test.js

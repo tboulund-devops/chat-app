@@ -15,4 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FeatureHub.SDK" Version="3.0.0" />
+  </ItemGroup>
 </Project>

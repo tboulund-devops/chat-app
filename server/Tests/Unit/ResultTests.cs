@@ -15,7 +15,7 @@ public class ResultTests
     [Fact]
     public void Failure_ShouldHaveFailureStatus_AndIsSuccessFalse()
     {
-        var result = Result.Failure("something went wrong");
+        var result = Result.Failure("something went wrong", ResultStatus.Failure);
         Assert.Equal(ResultStatus.Failure, result.Status);
         Assert.False(result.IsSuccess);
         Assert.Equal("something went wrong", result.Message);

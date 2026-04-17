@@ -11,4 +11,5 @@ public interface IChatRoomRepository : IBaseRepository<ChatRoom>
     Task<bool> IsMemberAsync(Guid roomId, Guid userId);
     Task<IEnumerable<ChatRoom>> SearchRoomsByNameAsync(string name);
     Task<IEnumerable<ChatRoom>> GetAllRoomsAsync();
+    Task<IEnumerable<ChatRoomMember>> GetMembersAsync(Guid roomId);
 }

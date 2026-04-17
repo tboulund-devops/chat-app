@@ -79,30 +79,31 @@ public class InMemorySimpleSse : ISimpleSse, IDisposable
         return Task.CompletedTask;
     }
 
-    public async Task SendToGroupAsync(Guid groupId, object message)
+    public async Task SendToGroupAsync(Guid groupId, object message, string eventName = "message")
     {
-        if (!_groups.TryGetValue(groupId, out var members))
-        {
-            return;
-        }
-        
-        var json = JsonSerializer.SerializeToElement(message, _jsonSerializerOptions);
-        var evt = new SseEvent(groupId, json);
-        
-        Console.WriteLine("Sending message to group " + groupId);
-        
-        var tasks = members.Keys
-            .Select(id =>
-            {
-                if (_connections.TryGetValue(id, out var state))
-                {
-                    return state.Channel.Writer.WriteAsync(evt).AsTask();
-                }
+        if (!_groups.TryGetValue(groupId, out var members)) return;
 
-                return Task.CompletedTask;
-            });
+        var json = JsonSerializer.SerializeToElement(message, _jsonSerializerOptions);
+        var evt = new SseEvent(groupId, json, eventName);   // <-- pass it in
+
+        var tasks = members.Keys.Select(id =>
+        {
+            if (_connections.TryGetValue(id, out var state))
+                return state.Channel.Writer.WriteAsync(evt).AsTask();
+            return Task.CompletedTask;
+        });
 
         await Task.WhenAll(tasks);
+    }
+
+    public Task SendToUserAsync(Guid userId, object message, string eventName = "notification")
+    {
+        return SendToGroupAsync(userId, message, eventName);
+    }
+
+    public Task SubscribeUserAsync(Guid connectionId, Guid userId)
+    {
+        return AddToGroupAsync(connectionId, userId);
     }
 
 

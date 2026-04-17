@@ -26,14 +26,36 @@ public class UserRepository(MyDbContext dbContext) : IUserRepository
         }
     }
 
-    public Task<bool> DeleteAsync(User entity)
+    public async Task<bool> DeleteAsync(User entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            dbContext.Users.Remove(entity);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }
     }
 
-    public Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var existing = dbContext.Users.FirstOrDefaultAsync(m => m.Id == id);
+            if (existing == null)
+                return false;
+
+            dbContext.Users.Remove(await existing);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException e)
+        {
+            throw new RepositoryException(e.Message, e);
+        }
     }
 
     public async Task<User> FindByIdAsync(Guid id)
@@ -43,9 +65,9 @@ public class UserRepository(MyDbContext dbContext) : IUserRepository
         return user ?? throw new EntityNotFoundException("User not found");
     }
 
-    public Task<IEnumerable<User>> GetAllAsync()
+    public async Task<IEnumerable<User>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        return await dbContext.Users.ToListAsync();
     }
 
     public async Task<bool> UpdateAsync(User entity)

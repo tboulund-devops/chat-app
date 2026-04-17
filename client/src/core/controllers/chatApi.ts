@@ -1,6 +1,7 @@
 import type { ChatRoom } from '../types/ChatRoom'
 import type { ChatMessage } from '../types/ChatMessage'
 import { api } from "../../utils/api";
+import {RoomMember} from "../types/RoomMember";
 
 const endpoint = '/api/chat';
 
@@ -52,6 +53,18 @@ export const chatApi = {
       throw new Error(err.message || 'Failed to fetch all rooms');
     });
   },
+  
+  createRoom: async (name: string, description?: string): Promise<ChatRoom> => {
+    return await api<ChatRoom>(`${endpoint}/rooms`, {
+      init: {
+        method: 'POST',
+        body: JSON.stringify({name, description})
+      },
+    }).catch((err: any) => {
+      console.log("Failed to create room", err);
+      throw new Error(err.message || "Failed to create room")
+    });
+  },
 
   joinRoom: async (roomId: string) => {
     return api(`/api/chat/rooms/${roomId}/join`, { init: { method: "POST" }});
@@ -63,5 +76,24 @@ export const chatApi = {
   getRoomMessages: async (roomId: string): Promise<ChatMessage[]> => {
     const result = await api<any>(`${endpoint}/rooms/${roomId}/messages`)
     return (result?.dto ?? result) as ChatMessage[]
+  },
+
+  editMessage: async (messageId: string, newContent: string): Promise<void> => {
+    await api(`${endpoint}/messages/${messageId}`, {
+      init: {
+        method: 'PATCH',
+        body: JSON.stringify({ newContent }),
+      },
+    })
+  },
+
+  deleteMessage: async (messageId: string): Promise<void> => {
+    await api(`${endpoint}/messages/${messageId}`, {
+      init: { method: 'DELETE' },
+    })
+  },
+
+  getRoomMembers: async (roomId: string): Promise<RoomMember[]> => {
+    return await api<RoomMember[]>(`${endpoint}/rooms/${roomId}/members`);
   },
 };

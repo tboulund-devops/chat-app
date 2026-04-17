@@ -106,6 +106,35 @@ namespace Infrastructure.Migrations
                     b.ToTable("ChatRoomMembers");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId", "IsRead", "CreatedAt");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -208,6 +237,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Room");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recipient");
                 });
 
             modelBuilder.Entity("Domain.Entities.ChatRoom", b =>

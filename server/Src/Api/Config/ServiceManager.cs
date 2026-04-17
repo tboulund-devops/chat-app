@@ -1,9 +1,14 @@
 using System.Text;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
+using Application.Common.Interfaces.Services;
+using Application.Features;
 using Application.Features.Auth;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
+using Application.Features.Notifications;
+using Application.Services;
+using Application.Services.FeatureFlags;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Utility;
@@ -28,6 +33,8 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         ConfigureLogger();
         
         ConfigureAppSettings();
+
+        services.AddHealthChecks();
 
         ConfigureDbContext();
 
@@ -130,7 +137,6 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
             logging.ClearProviders();
             logging.AddConsole();
             logging.SetMinimumLevel(LogLevel.Error);
-            // logging.AddProvider(new FileLoggerProvider("logs/app.log"));
         });
         
         Console.WriteLine("Logger configuration loaded.");
@@ -183,11 +189,19 @@ public sealed class ServiceManager(IServiceCollection services, AppSettings appS
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<IAuthFeature, AuthFeature>();
         
+        //Notification Feature
+        services.AddScoped<INotificationFeature, NotificationFeature>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
+        
         // Chat feature
         services.AddScoped<IChatFeature, Application.Features.Chat.ChatFeature>();
 
         services.AddSingleton<IEnvHelper, Infrastructure.Utils.EnvHelper>();
         services.AddSingleton<IHashingUtils, Infrastructure.Utils.HashingUtils>();
+        
+        // Feature flags
+        services.AddSingleton<IFeatureStateProvider, FeatureStateProvider>();
         Console.WriteLine("Controllers and Features configuration loaded.");
     }
 

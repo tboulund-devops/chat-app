@@ -1,9 +1,11 @@
 ﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Responses;
 using Application.Features.Auth;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
+using Application.Services.FeatureFlags;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
@@ -18,6 +20,7 @@ namespace Unit;
 public class AuthFeatureTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly IFeatureStateProvider _featureStateProvider = Substitute.For<FeatureStateProvider>();
     
     private readonly AuthFeature _authFeature;
 
@@ -38,7 +41,8 @@ public class AuthFeatureTests
         );
         var registerHandler = new RegisterUserHandler(
             _userRepository,
-            Substitute.For<IHashingUtils>()
+            Substitute.For<IHashingUtils>(),
+            _featureStateProvider
         );
         _authFeature = new AuthFeature(loginHandler, registerHandler, _userRepository);
     }

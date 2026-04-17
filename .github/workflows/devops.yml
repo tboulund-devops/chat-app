@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - release/db-contabo
+      - develop
+      - main
   workflow_dispatch: {}
 
 jobs:

@@ -1,0 +1,22 @@
+2026-04-11 20:18:44.165677Z jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DB_MIGRATION" not found (this database is empty); SQL statement:
+select mchecksum, mversion from db_migration [42104-230]
+2026-04-17 12:58:30.333192Z jdbc[3]: exception
+org.h2.jdbc.JdbcSQLNonTransientConnectionException: The database is open in exclusive mode; can not open additional connections [90135-230]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:690)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.message.DbException.get(DbException.java:188)
+	at org.h2.engine.SessionLocal.checkSuspended(SessionLocal.java:1259)
+	at org.h2.engine.SessionLocal.transitionToState(SessionLocal.java:1251)
+	at org.h2.engine.SessionLocal.waitIfExclusiveModeEnabled(SessionLocal.java:1499)
+	at org.h2.command.Command.executeUpdate(Command.java:247)
+	at org.h2.jdbc.JdbcConnection.rollbackInternal(JdbcConnection.java:1439)
+	at org.h2.jdbc.JdbcConnection.rollback(JdbcConnection.java:514)
+	at io.ebean.datasource.pool.PooledConnection.doCloseConnection(PooledConnection.java:275)
+	at io.ebean.datasource.pool.ConnectionPool$AsyncCloser.run(ConnectionPool.java:772)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPerTaskExecutor$ThreadBoundFuture.run(Unknown Source)
+	at java.base/java.lang.VirtualThread.run(Unknown Source)

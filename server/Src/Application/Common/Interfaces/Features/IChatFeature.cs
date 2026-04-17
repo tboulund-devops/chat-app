@@ -12,4 +12,7 @@ public interface IChatFeature
     Task<Result> JoinRoomAsync(Guid userId, Guid roomId);
     Task<Result> LeaveRoomAsync(Guid userId, Guid roomId);
     Task<Result<IEnumerable<ChatRoomDto>>> SearchRoomByNameAsync(string name);
+    Task<Result> EditMessageAsync(Guid userId, Guid messageId, string newContent);
+    Task<Result> DeleteMessageAsync(Guid userId, Guid messageId);
+    Task<Result<IEnumerable<RoomMemberDto>>> GetRoomMembersAsync(Guid userId, Guid roomId);
 }

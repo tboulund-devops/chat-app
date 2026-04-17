@@ -15,8 +15,8 @@ public class Result
     
     public static Result Success(string message = "Success")
         => new(ResultStatus.Success, message);
-    public static Result Failure(string message)
-        => new(ResultStatus.Failure, message);
+    public static Result Failure(string message, ResultStatus status)
+        => new(status, message);
 }
 
 public class Result<TDto> : Result

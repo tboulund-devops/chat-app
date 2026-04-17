@@ -1,5 +1,7 @@
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
+using Application.Services.FeatureFlags;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
@@ -9,17 +11,22 @@ namespace Application.Features.Auth.Register;
 
 public sealed class RegisterUserHandler(
     IUserRepository userRepository,
-    IHashingUtils hashingUtils
+    IHashingUtils hashingUtils,
+    IFeatureStateProvider featureStateProvider
 ) : ICommandHandler<RegisterUserCommand, Result>
 {
     public async Task<Result> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {
         try
         {
+            if (!featureStateProvider.IsEnabled("RegisterNewUsers"))
+            {
+                return Result.Failure("Registration is currently disabled.", ResultStatus.Failure);
+            }
             if (await userRepository.IsUserExistByEmailAsync(command.Email))
             {
                 
-                return Result.Failure("Email already in use.");
+                return Result.Failure("Email already in use.", ResultStatus.Failure);
             }
             
             hashingUtils.CreatePasswordHash(command.Password, out var passwordHash);
@@ -38,7 +45,7 @@ public sealed class RegisterUserHandler(
         }
         catch (RepositoryException e)
         {
-            return Result.Failure(e.Message);
+            return Result.Failure(e.Message, ResultStatus.Failure);
         }
     }
 }

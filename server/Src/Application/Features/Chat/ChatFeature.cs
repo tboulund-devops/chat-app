@@ -1,8 +1,9 @@
-using Application.Common.Interfaces;
 using Application.Common.Interfaces.Features;
+using Application.Common.Interfaces.Services;
 using Application.Common.Results;
 using Application.DTOs.Chat;
 using Application.DTOs.Entities;
+using Application.Services;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces.Repositories;
@@ -12,22 +13,31 @@ namespace Application.Features.Chat;
 public class ChatFeature(
     IChatMessageRepository messageRepository,
     IChatRoomRepository roomRepository,
-    IUserRepository userRepository
+    INotificationService notificationService,
+    IFeatureStateProvider featureStateProvider
 ) : IChatFeature
 {
     public async Task<Result<ChatMessageDto>> CreateMessageAsync(Guid userId, SendMessageRequest request)
     {
         try
         {
-            // Verify user is member of the room
+            // Verify the user is a member of the room
             if (!await roomRepository.IsMemberAsync(request.RoomId, userId))
             {
                 return Result<ChatMessageDto>.Failure("You are not a member of this room");
             }
 
             var message = ChatMessage.Create(request.RoomId, userId, request.Content);
-            
             await messageRepository.AddAsync(message);
+
+            try
+            {
+                await notificationService.NotifyNewMessageAsync(userId, request.RoomId, message.Id, request.Content);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to send notification: {e.Message}");
+            }
 
             var messageDto = new ChatMessageDto(
                 message.Id,
@@ -75,12 +85,14 @@ public class ChatFeature(
 
     public async Task<Result<ChatRoomDto>> CreateRoomAsync(Guid userId, CreateRoomRequest request)
     {
+        
+        if (!featureStateProvider.IsEnabled(("CreateChatRooms")))
+            return Result<ChatRoomDto>.Failure("Chat rooms are currently disabled.", ResultStatus.Failure);
         try
         {
             var room = ChatRoom.Create(request.Name, userId, request.Description);
-            
             await roomRepository.AddAsync(room);
-            
+            await roomRepository.AddMemberAsync(room.Id, userId);
             return Result<ChatRoomDto>.Success(ChatRoomDto.Map(room));
         }
         catch (RepositoryException ex)
@@ -109,23 +121,21 @@ public class ChatFeature(
     {
         try
         {
-            var room = await roomRepository.FindByIdAsync(roomId);
+            await roomRepository.FindByIdAsync(roomId); // throws if not found
             
             if (await roomRepository.IsMemberAsync(roomId, userId))
-            {
-                return Result.Failure("You are already a member of this room");
-            }
+                return Result.Failure("You are already a member of this room", ResultStatus.Failure);
 
             await roomRepository.AddMemberAsync(roomId, userId);
             return Result.Success("Successfully joined the room");
         }
         catch (EntityNotFoundException)
         {
-            return Result.Failure("Room not found");
+            return Result.Failure("Room not found", ResultStatus.NotFound);
         }
         catch (RepositoryException ex)
         {
-            return Result.Failure($"Failed to join room: {ex.Message}");
+            return Result.Failure($"Failed to join room: {ex.Message}", ResultStatus.Failure);
         }
     }
 
@@ -135,18 +145,18 @@ public class ChatFeature(
         {
             if (!await roomRepository.IsMemberAsync(roomId, userId))
             {
-                return Result.Failure("You are not a member of this room");
+                return Result.Failure("You are not a member of this room", ResultStatus.Unauthorized);
             }
 
             await roomRepository.RemoveMemberAsync(roomId, userId);
             // Note: SSE connections are managed by connectionId, not userId
-            // Active connections will fail authorization on next request
+            // Active connections will fail authorization on the next request
             
             return Result.Success();
         }
         catch (RepositoryException ex)
         {
-            return Result.Failure($"Failed to leave room: {ex.Message}");
+            return Result.Failure($"Failed to leave room: {ex.Message}", ResultStatus.Failure);
         }
     }
 
@@ -155,5 +165,69 @@ public class ChatFeature(
         var rooms = await roomRepository.SearchRoomsByNameAsync(name);
         var roomsDto = rooms.Select(ChatRoomDto.Map).ToList();
         return roomsDto.Count == 0 ? Result<IEnumerable<ChatRoomDto>>.Failure("No rooms found") : Result<IEnumerable<ChatRoomDto>>.Success(roomsDto);
+    }
+
+    public async Task<Result> EditMessageAsync(Guid userId, Guid messageId, string newContent)
+    {
+        try
+        {
+            var message = await messageRepository.FindByIdAsync(messageId);
+            
+            if(message.SenderId != userId)
+                return Result.Failure("You are not allowed to edit this message", ResultStatus.Forbidden);
+            
+            if(message.IsDeleted)
+                return Result.Failure("Cannot edit a deleted message", ResultStatus.Unauthorized);
+
+            var updated = message with { Content = newContent };
+            await messageRepository.UpdateAsync(updated);
+            
+            return Result.Success();
+        }
+        catch (EntityNotFoundException e)
+        {
+            return Result.Failure(e.Message, ResultStatus.NotFound);
+        }
+        catch (RepositoryException e)
+        {
+            return Result.Failure($"Failed to edit message: {e.Message}", ResultStatus.Unauthorized);
+        }
+    }
+
+    public async Task<Result> DeleteMessageAsync(Guid userId, Guid messageId)
+    {
+        try
+        {
+            var message = await messageRepository.FindByIdAsync(messageId);
+
+            if (message.SenderId != userId)
+                return Result.Failure("You are not allowed to delete this message", ResultStatus.Forbidden);
+
+            var deleted = message with
+            {
+                Content = "This message was deleted",
+                IsDeleted = true
+            };
+            await messageRepository.UpdateAsync(deleted);
+            
+            return Result.Success();
+        }
+        catch (EntityNotFoundException e)
+        {
+            return Result.Failure(e.Message, ResultStatus.NotFound);
+        }
+        catch (RepositoryException e)
+        {
+            return Result.Failure($"Failed to delete message: {e.Message}", ResultStatus.Unauthorized);
+        }
+    }
+
+    public async Task<Result<IEnumerable<RoomMemberDto>>> GetRoomMembersAsync(Guid userId, Guid roomId)
+    {
+        if (!await roomRepository.IsMemberAsync(roomId, userId))
+            return Result<IEnumerable<RoomMemberDto>>.Failure("Not a member", ResultStatus.Unauthorized);
+
+        var members = await roomRepository.GetMembersAsync(roomId);
+        return Result<IEnumerable<RoomMemberDto>>.Success(members.Select(RoomMemberDto.Map));
     }
 }
