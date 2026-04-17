@@ -23,7 +23,6 @@ tools:
     # If in a private repo this has no particular effect.
     lockdown: false
     min-integrity: none # This workflow is allowed to examine and comment on any issues
-    repos: all
 
 safe-outputs:
   mentions: false
@@ -32,7 +31,7 @@ safe-outputs:
     title-prefix: "[repo-status] "
     labels: [report, daily-status]
     close-older-issues: true
-source: githubnext/agentics/workflows/daily-repo-status.md@d88ca0e8ee2b080fcba4490ac5b657c98a0eb26b
+source: githubnext/agentics/workflows/daily-repo-status.md@96b9d4c39aa22359c0b38265927eadb31dcf4e2a
 engine: copilot
 ---
 
