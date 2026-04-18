@@ -46,8 +46,15 @@ public class EnvHelper : IEnvHelper
 
     public T GetOrDefault<T>(string key, T defaultValue)
     {
-        var value = Get<T>(key);
-        return value ?? defaultValue;
+        try
+        {
+            var value = Get<T>(key);
+            return value ?? defaultValue;
+        }
+        catch (EnvironmentVariableNotFoundException)
+        {
+            return defaultValue;
+        }
     }
 
     public T GetRequired<T>(string key)

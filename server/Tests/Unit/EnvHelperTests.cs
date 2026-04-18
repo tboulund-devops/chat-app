@@ -109,4 +109,77 @@ public class EnvHelperTests : IDisposable
         Assert.Throws<EnvironmentVariableNotFoundException>(() =>
             _envHelper.GetRequired<string>("MISSING_REQUIRED_VAR_99999"));
     }
+    
+    // ── GetOrDefault<T> ──────────────────────────────────────────────────
+
+[Fact]
+public void GetOrDefault_ShouldReturnDefault_WhenVariableMissing()
+{
+    var result = _envHelper.GetOrDefault("NONEXISTENT_DEFAULT_VAR_99999", "fallback");
+    Assert.Equal("fallback", result);
+}
+
+// ── LoadAndGetConnectionString ────────────────────────────────────────
+
+[Fact]
+public void LoadAndGetConnectionString_ShouldReturnExistingValue_WhenEnvVarIsSet()
+{
+    SetEnv("Database__PSqlConnectionString", "Host=myserver;Database=mydb");
+    var result = EnvHelper.LoadAndGetConnectionString();
+    Assert.Equal("Host=myserver;Database=mydb", result);
+}
+
+[Fact]
+public void LoadAndGetConnectionString_ShouldReturnExistingValue_WhenCalledWithThrowFlag()
+{
+    SetEnv("Database__PSqlConnectionString", "Host=myserver;Database=mydb");
+    var result = EnvHelper.LoadAndGetConnectionString(throwIfNotFound: true);
+    Assert.Equal("Host=myserver;Database=mydb", result);
+}
+
+[Fact]
+public void LoadAndGetConnectionString_ShouldReturnFallback_WhenNotFoundAndThrowIsFalse()
+{
+    // Ensure the key is not set
+    Environment.SetEnvironmentVariable("Database__PSqlConnectionString", null);
+
+    var result = EnvHelper.LoadAndGetConnectionString(throwIfNotFound: false);
+
+    Assert.Equal("Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres", result);
+}
+
+[Fact]
+public void LoadAndGetConnectionString_ShouldThrow_WhenNotFoundAndThrowIsTrue()
+{
+    Environment.SetEnvironmentVariable("Database__PSqlConnectionString", null);
+
+    Assert.Throws<ConfigurationFailureException>(() =>
+        EnvHelper.LoadAndGetConnectionString(throwIfNotFound: true));
+}
+
+[Fact]
+public void LoadAndGetConnectionString_NoArg_ShouldReturnFallback_WhenNotFound()
+{
+    Environment.SetEnvironmentVariable("Database__PSqlConnectionString", null);
+
+    var result = EnvHelper.LoadAndGetConnectionString();
+
+    Assert.Equal("Host=localhost;Port=5432;Database=Incident_Tracker;Username=postgres;Password=postgres", result);
+}
+
+// ── ParseOrThrow edge cases ───────────────────────────────────────────
+
+[Fact]
+public void Get_ShouldThrowFormatException_WhenBoolCannotBeParsed()
+{
+    SetEnv("TEST_BAD_BOOL", "not_a_bool");
+    Assert.Throws<FormatException>(() => _envHelper.Get<bool>("TEST_BAD_BOOL"));
+}
+
+[Fact]
+public void Get_ShouldThrowFormatException_WhenCharCannotBeParsed()
+{
+    SetEnv("TEST_BAD_CHAR", "too_long");
+    Assert.Throws<FormatException>(() => _envHelper.Get<char>("TEST_BAD_CHAR"));
+}
 }
