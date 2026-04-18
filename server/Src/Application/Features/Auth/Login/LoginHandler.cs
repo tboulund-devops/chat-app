@@ -45,7 +45,7 @@ public sealed class LoginHandler(
 
             return Result<LoginResponseDto>.Success(dto);
         }
-        catch (EntityNotFoundException e)
+        catch (EntityNotFoundException)
         {
             return Result<LoginResponseDto>.Failure("Invalid credentials.", ResultStatus.Unauthorized);
         }

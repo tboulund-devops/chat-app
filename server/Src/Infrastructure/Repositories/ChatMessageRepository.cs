@@ -40,11 +40,11 @@ public class ChatMessageRepository(MyDbContext dbContext) : IChatMessageReposito
     {
         try
         {
-            var existing = dbContext.ChatMessages.FirstOrDefaultAsync(m => m.Id == id);
+            var existing = await dbContext.ChatMessages.FirstOrDefaultAsync(m => m.Id == id);
             if (existing == null)
                 return false;
-        
-            dbContext.ChatMessages.Remove(await existing);
+    
+            dbContext.ChatMessages.Remove(existing);
             await dbContext.SaveChangesAsync();
             return true;
         }
@@ -72,11 +72,11 @@ public class ChatMessageRepository(MyDbContext dbContext) : IChatMessageReposito
     {
         try
         {
-            var existing = dbContext.ChatMessages.FirstOrDefaultAsync(m => m.Id == entity.Id);
-            if(existing == null)
+            var existing = await dbContext.ChatMessages.FirstOrDefaultAsync(m => m.Id == entity.Id);
+            if (existing == null)
                 return false;
-        
-            dbContext.Entry(await existing).CurrentValues.SetValues(entity);
+    
+            dbContext.Entry(existing).CurrentValues.SetValues(entity);
             await dbContext.SaveChangesAsync();
             return true;
         }

@@ -57,7 +57,7 @@ public class LoginHandlerTests
         _hashingUtils.GenerateRefreshToken().Returns("refresh-token");
         _userRepository.UpdateAsync(Arg.Any<User>()).Returns(true);
 
-        var result = await _handler.HandleAsync(MakeCommand());
+        var result = await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Dto);
@@ -72,7 +72,7 @@ public class LoginHandlerTests
         _userRepository.GetByEmailAsync(Arg.Any<string>()).Returns(user);
         _hashingUtils.VerifyPasswordHash(Arg.Any<string>(), Arg.Any<byte[]>()).Returns(false);
 
-        var result = await _handler.HandleAsync(MakeCommand("wrong"));
+        var result = await _handler.HandleAsync(MakeCommand("wrong"), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
@@ -84,7 +84,7 @@ public class LoginHandlerTests
         _userRepository.GetByEmailAsync(Arg.Any<string>())
             .Throws(new EntityNotFoundException("User not found"));
 
-        var result = await _handler.HandleAsync(MakeCommand());
+        var result = await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
@@ -96,7 +96,7 @@ public class LoginHandlerTests
         _userRepository.GetByEmailAsync(Arg.Any<string>())
             .Throws(new RepositoryException("DB down"));
 
-        var result = await _handler.HandleAsync(MakeCommand());
+        var result = await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Failure, result.Status);
@@ -112,7 +112,7 @@ public class LoginHandlerTests
         _hashingUtils.GenerateRefreshToken().Returns("refresh");
         _userRepository.UpdateAsync(Arg.Any<User>()).Returns(true);
 
-        await _handler.HandleAsync(MakeCommand());
+        await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         await _userRepository.Received(1).UpdateAsync(Arg.Is<User>(u => u.RefreshToken == "refresh"));
     }

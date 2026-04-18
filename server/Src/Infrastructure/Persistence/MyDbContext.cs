@@ -12,7 +12,6 @@ public class MyDbContextFactory : IDesignTimeDbContextFactory<MyDbContext>
     {
         // For design-time (migrations), read connection string from environment variable
         // Falls back to localhost if not set
-        var envHelper = new EnvHelper();
 
         var builder = new DbContextOptionsBuilder<MyDbContext>();
         builder.UseNpgsql(EnvHelper.LoadAndGetConnectionString(true));

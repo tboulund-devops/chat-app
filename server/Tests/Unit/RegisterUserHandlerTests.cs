@@ -40,7 +40,7 @@ public class RegisterUserHandlerTests
         _userRepository.IsUserExistByEmailAsync(Arg.Any<string>()).Returns(false);
         _userRepository.AddAsync(Arg.Any<User>()).Returns(x => x.Arg<User>());
 
-        var result = await _handler.HandleAsync(MakeCommand());
+        var result = await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
     }
@@ -50,7 +50,7 @@ public class RegisterUserHandlerTests
     {
         _userRepository.IsUserExistByEmailAsync(Arg.Any<string>()).Returns(true);
 
-        var result = await _handler.HandleAsync(MakeCommand());
+        var result = await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Equal("Email already in use.", result.Message);
@@ -62,7 +62,7 @@ public class RegisterUserHandlerTests
         _userRepository.IsUserExistByEmailAsync(Arg.Any<string>()).Returns(false);
         _userRepository.AddAsync(Arg.Any<User>()).Returns(x => x.Arg<User>());
 
-        await _handler.HandleAsync(MakeCommand());
+        await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         _hashingUtils.Received(1).CreatePasswordHash(
             Arg.Is("Password1!"),
@@ -78,7 +78,7 @@ public class RegisterUserHandlerTests
         _userRepository.AddAsync(Arg.Any<User>())
             .Throws(new RepositoryException("DB error"));
 
-        var result = await _handler.HandleAsync(MakeCommand());
+        var result = await _handler.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Contains("DB error", result.Message);

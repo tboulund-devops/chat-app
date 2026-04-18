@@ -49,11 +49,5 @@ public sealed class UserRepositoryTests(MyDbContextFixture fixture) : IAsyncLife
         Assert.NotNull(fromDb);
         Assert.Equal("Johnny", fromDb.FirstName);
     }
-
-    [Fact]
-    public async Task ShouldSuccessfullyRemoveUserFromRepositoryById()
-    {
-        // Arrange
-        
-    }
+    
 }

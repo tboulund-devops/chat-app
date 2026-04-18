@@ -29,7 +29,7 @@ public record ChatRoomDto()
             Name = chatRoom.Name,
             Description = chatRoom.Description,
             CreatedAt = chatRoom.CreatedAt,
-            Members = chatRoom.Members.Select(member => UserDto.Map(member.User)),
+            Members = chatRoom.Members.Select(member => UserDto.Map(member.User)).OfType<UserDto>(),
             Owner = UserDto.Map(chatRoom.CreatedBy)
         };
     }

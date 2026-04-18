@@ -106,4 +106,69 @@ public sealed class AuthControllerTests(ApiFactory factory)
         var response = await _client.PostAsync("api/auth/logout", null, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+    
+
+[Fact]
+public async Task Login_ShouldReturn204_WhenAlreadyAuthenticated()
+{
+    var (authenticatedClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await authenticatedClient.PostAsJsonAsync("api/auth/login", new LoginCommand
+    {
+        Email = "test@test.com",
+        Password = "ValidPassword1!"
+    }, cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+}
+
+[Fact]
+public async Task Register_ShouldReturn401_WhenUnauthenticatedUserTriesToRegisterCrew()
+{
+    var response = await _client.PostAsJsonAsync("api/auth/register", new RegisterUserCommand
+    {
+        FirstName = "Bad",
+        LastName = "Actor",
+        Email = "crew@evil.com",
+        Password = "SecurePass1!",
+        Role = RoleType.Crew
+    }, cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+}
+
+[Fact]
+public async Task GetMe_ShouldReturn200_WhenAuthenticated()
+{
+    var (authenticatedClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await authenticatedClient.GetAsync("api/auth/me", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task Logout_ShouldReturn200_WhenAuthenticated()
+{
+    var (authenticatedClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await authenticatedClient.PostAsync("api/auth/logout", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task Logout_ShouldDeleteCookies_WhenAuthenticated()
+{
+    var client = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+    var (authenticatedClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await authenticatedClient.PostAsync("api/auth/logout", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    var cookies = response.Headers.Contains("Set-Cookie")
+        ? response.Headers.GetValues("Set-Cookie").ToList()
+        : [];
+    Assert.Contains(cookies, c => c.Contains("accessToken=;") || c.Contains("accessToken=,"));
+}
 }

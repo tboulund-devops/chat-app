@@ -193,4 +193,154 @@ public sealed class ChatControllerTests(ApiFactory factory)
 
         return (roomId, messageId);
     }
+    
+[Fact]
+public async Task JoinRoom_ShouldReturn401_WhenNotAuthenticated()
+{
+    var response = await _client.PostAsync($"api/chat/rooms/{Guid.NewGuid()}/join", null, TestContext.Current.CancellationToken);
+    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+}
+
+[Fact]
+public async Task LeaveRoom_ShouldReturn401_WhenNotAuthenticated()
+{
+    var response = await _client.PostAsync($"api/chat/rooms/{Guid.NewGuid()}/leave", null, TestContext.Current.CancellationToken);
+    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+}
+
+[Fact]
+public async Task GetRoomMembers_ShouldReturn401_WhenNotAuthenticated()
+{
+    var response = await _client.GetAsync($"api/chat/rooms/{Guid.NewGuid()}/members", TestContext.Current.CancellationToken);
+    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+}
+
+[Fact]
+public async Task CreateRoom_ShouldReturn201_WhenAuthenticated()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await client.PostAsJsonAsync("api/chat/rooms",
+        new CreateRoomRequest($"Room {Guid.NewGuid()}", "Description"),
+        cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+}
+
+[Fact]
+public async Task SendMessage_ShouldReturn200_WhenAuthenticated()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(client);
+
+    var response = await client.PostAsJsonAsync("api/chat/messages",
+        new SendMessageRequest(roomId, "Hello"),
+        cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task GetMessages_ShouldReturn200_WhenAuthenticatedAndMember()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(client);
+
+    var response = await client.GetAsync($"api/chat/rooms/{roomId}/messages", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task GetMessages_ShouldReturn403_WhenAuthenticatedButNotMember()
+{
+    var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (otherClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(ownerClient);
+
+    var response = await otherClient.GetAsync($"api/chat/rooms/{roomId}/messages", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+}
+
+[Fact]
+public async Task GetMyRooms_ShouldReturn200_WhenAuthenticated()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await client.GetAsync("api/chat/my-rooms", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task SearchRoom_ShouldReturn200_WhenRoomExists()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var roomName = $"Searchable {Guid.NewGuid()}";
+    await client.PostAsJsonAsync("api/chat/rooms", new CreateRoomRequest(roomName, null),
+        cancellationToken: TestContext.Current.CancellationToken);
+
+    var response = await client.GetAsync($"api/chat/rooms/search?name={roomName}", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task SearchRoom_ShouldReturn404_WhenRoomDoesNotExist()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await client.GetAsync($"api/chat/rooms/search?name=zzznomatch{Guid.NewGuid()}", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+}
+
+[Fact]
+public async Task JoinRoom_ShouldReturn200_WhenAuthenticated()
+{
+    var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (joinerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(ownerClient);
+
+    var response = await joinerClient.PostAsync($"api/chat/rooms/{roomId}/join", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task LeaveRoom_ShouldReturn200_WhenMemberLeaves()
+{
+    var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (joinerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(ownerClient);
+
+    await joinerClient.PostAsync($"api/chat/rooms/{roomId}/join", null, TestContext.Current.CancellationToken);
+    var response = await joinerClient.PostAsync($"api/chat/rooms/{roomId}/leave", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task GetRoomMembers_ShouldReturn200_WhenAuthenticatedAndMember()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(client);
+
+    var response = await client.GetAsync($"api/chat/rooms/{roomId}/members", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
+[Fact]
+public async Task GetRoomMembers_ShouldReturn403_WhenNotMember()
+{
+    var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (otherClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(ownerClient);
+
+    var response = await otherClient.GetAsync($"api/chat/rooms/{roomId}/members", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+}
 }

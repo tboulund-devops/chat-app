@@ -40,11 +40,11 @@ public class ChatRoomRepository(MyDbContext dbContext) : IChatRoomRepository
     {
         try
         {
-            var existing = dbContext.ChatRooms.FirstOrDefaultAsync(m => m.Id == id);
+            var existing = await dbContext.ChatRooms.FirstOrDefaultAsync(m => m.Id == id);
             if (existing == null)
                 return false;
         
-            dbContext.ChatRooms.Remove(await existing);
+            dbContext.ChatRooms.Remove(existing);
             await dbContext.SaveChangesAsync();
             return true;
         }
