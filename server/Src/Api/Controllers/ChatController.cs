@@ -117,6 +117,7 @@ public class ChatController(
             return result.Status switch
             {
                 ResultStatus.Success => Ok(result.Dto),
+                ResultStatus.Unauthorized => Unauthorized(),
                 ResultStatus.Failure => BadRequest(result),
                 _ => BadRequest(result)
             };
@@ -170,6 +171,8 @@ public class ChatController(
                     new { roomId = result.Dto!.Id }, 
                     result.Dto  // return the DTO, not result.Message
                 ),
+                ResultStatus.Unauthorized => Unauthorized(),
+                _ => BadRequest(result)
             };
         }
         catch (UnauthorizedAccessException)
@@ -203,7 +206,7 @@ public class ChatController(
         }
         catch (UnauthorizedAccessException e)
         {
-            return Unauthorized();
+            return Unauthorized(e.Message);
         }
         
         var roomsResult = await chatFeature.GetUserRoomsAsync(userId);

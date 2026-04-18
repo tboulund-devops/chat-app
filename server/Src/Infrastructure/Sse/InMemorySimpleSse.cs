@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Data;
 using System.Text.Json;
 using System.Threading.Channels;
 using Application.Common.Interfaces;
@@ -9,55 +8,49 @@ namespace Infrastructure.Sse;
 public class InMemorySimpleSse : ISimpleSse, IDisposable
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
-    private readonly ConcurrentDictionary<Guid, ConnectionState>  _connections = new();
+    private readonly ConcurrentDictionary<Guid, ConnectionState> _connections = new();
     private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, byte>> _groups = new();
-    
+    private bool _disposed;
+
     public InMemorySimpleSse(JsonSerializerOptions? jsonOptions = null)
     {
         _jsonSerializerOptions = jsonOptions ?? new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
-    
-    private sealed class ConnectionState(Channel<SseEvent>channel)
+
+    private sealed class ConnectionState(Channel<SseEvent> channel)
     {
         public Channel<SseEvent> Channel { get; } = channel;
         public ConcurrentDictionary<Guid, byte> Groups { get; } = new();
-
     }
-    
+
     public (Guid ConnectionId, Channel<SseEvent> Reader) Connect()
     {
         var channel = Channel.CreateUnbounded<SseEvent>();
         var connectionId = Guid.NewGuid();
-        var state = new  ConnectionState(channel);
-        
+        var state = new ConnectionState(channel);
+
         _connections.TryAdd(connectionId, state);
-        
+
         return (connectionId, channel);
     }
 
     public Task DisconnectAsync(Guid connectionId)
     {
         if (!_connections.TryRemove(connectionId, out var state))
-        {
             return Task.CompletedTask;
-        }
-        
-        // all groups that client belongs to
+
         var clientGroups = state.Groups.Keys.ToList();
-        
-        // for each of this groups try to find them in the _groups dictionary and remove itself
+
         foreach (var groupId in clientGroups)
         {
             if (_groups.TryGetValue(groupId, out var members))
             {
                 members.TryRemove(connectionId, out _);
                 if (members.IsEmpty)
-                {
                     _groups.TryRemove(groupId, out _);
-                }
-                
             }
         }
+
         state.Channel.Writer.Complete();
         return Task.CompletedTask;
     }
@@ -65,13 +58,12 @@ public class InMemorySimpleSse : ISimpleSse, IDisposable
     public Task AddToGroupAsync(Guid connectionId, Guid groupId)
     {
         if (!_connections.TryGetValue(connectionId, out var state))
-            throw new Exception("connection is not connected");
+            throw new InvalidOperationException("Connection is not connected.");
 
         Console.WriteLine("Adding to group " + groupId);
         state.Groups.TryAdd(groupId, 0);
 
-        var members = _groups.GetOrAdd(groupId,
-            _ => new ConcurrentDictionary<Guid, byte>());
+        var members = _groups.GetOrAdd(groupId, _ => new ConcurrentDictionary<Guid, byte>());
 
         members.TryAdd(connectionId, 0);
 
@@ -84,7 +76,7 @@ public class InMemorySimpleSse : ISimpleSse, IDisposable
         if (!_groups.TryGetValue(groupId, out var members)) return;
 
         var json = JsonSerializer.SerializeToElement(message, _jsonSerializerOptions);
-        var evt = new SseEvent(groupId, json, eventName);   // <-- pass it in
+        var evt = new SseEvent(groupId, json, eventName);
 
         var tasks = members.Keys.Select(id =>
         {
@@ -96,7 +88,7 @@ public class InMemorySimpleSse : ISimpleSse, IDisposable
         await Task.WhenAll(tasks);
     }
 
-    public Task SendToUserAsync(Guid userId, object message, string eventName = "notification")
+    public Task SendToUserAsync(Guid userId, object message, string eventName = "message")
     {
         return SendToGroupAsync(userId, message, eventName);
     }
@@ -106,17 +98,22 @@ public class InMemorySimpleSse : ISimpleSse, IDisposable
         return AddToGroupAsync(connectionId, userId);
     }
 
-
     public void Dispose()
     {
-        foreach (var state in _connections.Values)
-        {
-            state.Channel.Writer.Complete();
-        }
-        _connections.Clear();
-        _groups.Clear();
-        
-        
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
-    
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+        if (disposing)
+        {
+            foreach (var state in _connections.Values)
+                state.Channel.Writer.Complete();
+            _connections.Clear();
+            _groups.Clear();
+        }
+        _disposed = true;
+    }
 }

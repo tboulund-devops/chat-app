@@ -16,6 +16,13 @@ public class EnvHelperTests : IDisposable
 
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposing) return;
         foreach (var key in _setKeys)
             Environment.SetEnvironmentVariable(key, null);
     }

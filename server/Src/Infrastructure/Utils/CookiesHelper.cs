@@ -3,9 +3,8 @@ using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Utils;
 
-public abstract class CookieHelper(IEnvHelper envHelper)
+public abstract class CookieHelper()
 {
-    private readonly IEnvHelper _envHelper = envHelper;
 
     private static CookieOptions CreateCookieOptions(TimeSpan maxAge)
     {

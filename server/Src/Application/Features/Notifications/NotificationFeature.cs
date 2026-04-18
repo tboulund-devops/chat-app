@@ -25,7 +25,7 @@ public class NotificationFeature(
             await notificationService.NotifyPokeAsync(pokerId, targetUserId);
             return Result.Success();
         }
-        catch (EntityNotFoundException ex)
+        catch (EntityNotFoundException)
         {
             return Result.Failure("User not found", ResultStatus.NotFound);
         }

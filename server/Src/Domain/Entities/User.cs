@@ -10,7 +10,7 @@ public sealed record User
     
     public required string FirstName { get; set; }
     public required string LastName { get; set; }
-    public DateOnly DateOfBirth { get; set; } = DateOnly.FromDateTime(new DateTime(1970, 1, 1));
+    public DateOnly DateOfBirth { get; set; } = DateOnly.FromDateTime(DateTime.UnixEpoch);
 
     public required string Email { get; set; }
     public byte[] PasswordHash { get; set; } = null!;

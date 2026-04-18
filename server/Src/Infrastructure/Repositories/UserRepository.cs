@@ -44,11 +44,11 @@ public class UserRepository(MyDbContext dbContext) : IUserRepository
     {
         try
         {
-            var existing = dbContext.Users.FirstOrDefaultAsync(m => m.Id == id);
+            var existing = await dbContext.Users.FirstOrDefaultAsync(m => m.Id == id);
             if (existing == null)
                 return false;
 
-            dbContext.Users.Remove(await existing);
+            dbContext.Users.Remove(existing);
             await dbContext.SaveChangesAsync();
             return true;
         }
@@ -104,7 +104,7 @@ public class UserRepository(MyDbContext dbContext) : IUserRepository
         {
             return await dbContext.Users.ContainsAsync(await GetByEmailAsync(email));
         }
-        catch (EntityNotFoundException e)
+        catch (EntityNotFoundException)
         {
             return false;
         }

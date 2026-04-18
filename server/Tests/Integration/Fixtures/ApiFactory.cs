@@ -12,8 +12,7 @@
 
     public sealed class ApiFactory : WebApplicationFactory<ApiMaker>, IAsyncLifetime
     {
-        private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-            .WithImage("postgres:17-alpine")
+        private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
             .WithDatabase("test_db")
             .WithUsername("postgres")
             .WithPassword("postgres")

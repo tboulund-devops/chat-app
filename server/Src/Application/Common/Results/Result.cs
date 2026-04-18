@@ -34,6 +34,6 @@ public class Result<TDto> : Result
     public static Result<TDto> Failure(string message = "Result with payload failed.")
         => new(ResultStatus.Failure, message, default);
 
-    public static Result<TDto> Failure(string message, ResultStatus status)
+    public new static Result<TDto> Failure(string message, ResultStatus status)
         => new(status, message, default);
 }
