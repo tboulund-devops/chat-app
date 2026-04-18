@@ -148,7 +148,7 @@ public class ChatController(
         return result.Status switch
         {
             ResultStatus.Success => Ok(result),
-            ResultStatus.Unauthorized => Forbid("You are not a member of this room"),
+            ResultStatus.Unauthorized => Forbid(),
             ResultStatus.Failure => BadRequest(result),
             _ => BadRequest(result)
         };
