@@ -33,4 +33,13 @@ public sealed class FeatureFlagsControllerTests(ApiFactory factory)
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(body.GetProperty("enabled").GetBoolean());
     }
+    
+    [Fact]
+    public async Task Debug_ShouldShowResponseBody()
+    {
+        var response = await _client.GetAsync("api/features/register-user", TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Console.WriteLine($"Status: {response.StatusCode}, Body: {body}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }

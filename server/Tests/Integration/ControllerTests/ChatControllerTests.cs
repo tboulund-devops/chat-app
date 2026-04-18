@@ -343,4 +343,42 @@ public async Task GetRoomMembers_ShouldReturn403_WhenNotMember()
 
     Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 }
+
+[Fact]
+public async Task SendMessage_ShouldReturn400_WhenNotMemberOfRoom()
+{
+    var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (otherClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(ownerClient);
+
+    var response = await otherClient.PostAsJsonAsync("api/chat/messages",
+        new SendMessageRequest(roomId, "Sneaky message"),
+        cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
+[Fact]
+public async Task JoinRoom_ShouldReturn400_WhenAlreadyMember()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(client);
+
+    var response = await client.PostAsync($"api/chat/rooms/{roomId}/join", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
+[Fact]
+public async Task LeaveRoom_ShouldReturn400_WhenNotMember()
+{
+    var (ownerClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (otherClient, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    var (roomId, _) = await CreateRoomWithMessageAsync(ownerClient);
+
+    var response = await otherClient.PostAsync($"api/chat/rooms/{roomId}/leave", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
 }

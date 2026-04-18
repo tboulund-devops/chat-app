@@ -151,8 +151,9 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.coverageReportPaths="SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
-            /d:sonar.qualitygate.timeout=300
-
+            /d:sonar.qualitygate.timeout=300 \
+            /d:sonar.exclusions="client/**/*" \
+            /d:sonar.coverage.exclusions="client/**/*"
       - name: Build For SonarQube Analysis
         
         run: |

@@ -171,4 +171,29 @@ public async Task Logout_ShouldDeleteCookies_WhenAuthenticated()
         : [];
     Assert.Contains(cookies, c => c.Contains("accessToken=;") || c.Contains("accessToken=,"));
 }
+
+[Fact]
+public async Task Register_ShouldReturn400_WhenEmailAlreadyExists()
+{
+    await _client.PostAsJsonAsync("api/auth/register", new RegisterUserCommand
+    {
+        FirstName = "Dupe",
+        LastName = "User",
+        Email = "duplicate@test.com",
+        Password = "SecurePass1!",
+        Role = RoleType.User
+    }, cancellationToken: TestContext.Current.CancellationToken);
+
+    var response = await _client.PostAsJsonAsync("api/auth/register", new RegisterUserCommand
+    {
+        FirstName = "Dupe",
+        LastName = "User",
+        Email = "duplicate@test.com",
+        Password = "SecurePass1!",
+        Role = RoleType.User
+    }, cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
 }
