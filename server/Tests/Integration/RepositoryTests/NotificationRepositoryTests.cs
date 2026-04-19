@@ -44,8 +44,7 @@ public sealed class NotificationRepositoryTests(MyDbContextFixture fixture) : IA
     {
         var n = await _repo.AddAsync(MakeNotification());
         Assert.NotEqual(Guid.Empty, n.Id);
-        Assert.NotNull(await _context.Notifications.FindAsync(n.Id, TestContext.Current.CancellationToken));
-    }
+        Assert.NotNull(await _context.Notifications.FindAsync([n.Id], TestContext.Current.CancellationToken));    }
 
     [Fact]
     public async Task FindByIdAsync_ShouldReturnNotification_WhenExists()

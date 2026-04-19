@@ -47,7 +47,7 @@ public sealed class ChatMessageRepositoryTests(MyDbContextFixture fixture) : IAs
         var msg = MakeMessage();
         var result = await _repo.AddAsync(msg);
         Assert.NotEqual(Guid.Empty, result.Id);
-        var fromDb = await _context.ChatMessages.FindAsync(result.Id, TestContext.Current.CancellationToken);
+        var fromDb = await _context.ChatMessages.FindAsync([result.Id], TestContext.Current.CancellationToken);
         Assert.NotNull(fromDb);
     }
 
@@ -72,8 +72,7 @@ public sealed class ChatMessageRepositoryTests(MyDbContextFixture fixture) : IAs
         var msg = await _repo.AddAsync(MakeMessage());
         var result = await _repo.DeleteAsync(msg);
         Assert.True(result);
-        Assert.Null(await _context.ChatMessages.FindAsync(msg.Id, TestContext.Current.CancellationToken));
-    }
+        Assert.Null(await _context.ChatMessages.FindAsync([msg.Id], TestContext.Current.CancellationToken));    }
 
     [Fact]
     public async Task DeleteAsync_ById_ShouldReturnTrue_WhenExists()
