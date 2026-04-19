@@ -202,7 +202,7 @@ public async Task Login_ShouldReturn400_WhenLoginFails()
     var response = await _client.PostAsJsonAsync("api/auth/login", new LoginCommand
     {
         Email = "nobody@nowhere.com",
-        Password = "wrongpassword"
+        Password = "wrong_password"
     }, cancellationToken: TestContext.Current.CancellationToken);
 
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);

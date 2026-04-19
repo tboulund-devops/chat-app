@@ -41,7 +41,7 @@ public sealed class ChatRoomRepositoryTests(MyDbContextFixture fixture) : IAsync
     {
         var room = await _repo.AddAsync(MakeRoom());
         Assert.NotEqual(Guid.Empty, room.Id);
-        Assert.NotNull(await _context.ChatRooms.FindAsync(room.Id, TestContext.Current.CancellationToken));
+        Assert.NotNull(await _context.ChatRooms.FindAsync([room.Id], TestContext.Current.CancellationToken));
     }
 
     [Fact]
