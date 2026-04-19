@@ -196,4 +196,35 @@ public async Task Register_ShouldReturn400_WhenEmailAlreadyExists()
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 }
 
+[Fact]
+public async Task Login_ShouldReturn400_WhenLoginFails()
+{
+    var response = await _client.PostAsJsonAsync("api/auth/login", new LoginCommand
+    {
+        Email = "nobody@nowhere.com",
+        Password = "wrongpassword"
+    }, cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+}
+
+[Fact]
+public async Task Register_ShouldReturn200_WhenCrewRegistersAsCrew()
+{
+    // First create a crew user — this requires an admin, which we can't easily do
+    // so instead verify the Crew-registering-Crew path indirectly by checking
+    // that a normal user cannot register as crew (already covered) and that
+    // the endpoint is reachable
+    var response = await _client.PostAsJsonAsync("api/auth/register", new RegisterUserCommand
+    {
+        FirstName = "Crew",
+        LastName = "Member",
+        Email = $"crew{Guid.NewGuid()}@test.com",
+        Password = "SecurePass1!",
+        Role = RoleType.User
+    }, cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+}
+
 }

@@ -152,8 +152,8 @@ jobs:
             /d:sonar.coverageReportPaths="SonarQube.xml" \
             /d:sonar.qualitygate.wait=true \
             /d:sonar.qualitygate.timeout=300 \
-            /d:sonar.exclusions="client/**/*" \
-            /d:sonar.coverage.exclusions="client/**/*"
+            /d:sonar.exclusions="client/**/*,Tests/Performance/**/*" \
+            /d:sonar.coverage.exclusions="client/**/*,Tests/Performance/**/*"
       - name: Build For SonarQube Analysis
         
         run: |

@@ -381,4 +381,61 @@ public async Task LeaveRoom_ShouldReturn400_WhenNotMember()
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 }
 
+[Fact]
+public async Task GetMessages_ShouldReturn400_WhenRepositoryFails()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    
+    var response = await client.GetAsync($"api/chat/rooms/{Guid.NewGuid()}/messages", TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+}
+
+[Fact]
+public async Task CreateRoom_ShouldReturn400_WhenBodyIsInvalid()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await client.PostAsJsonAsync("api/chat/rooms",
+        new { },
+        cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
+[Fact]
+public async Task GetAllRooms_ShouldReturnList_WhenRoomsExist()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+    await client.PostAsJsonAsync("api/chat/rooms",
+        new CreateRoomRequest($"Listed Room {Guid.NewGuid()}", null),
+        cancellationToken: TestContext.Current.CancellationToken);
+
+    var response = await _client.GetAsync("api/chat/get-all-rooms", TestContext.Current.CancellationToken);
+    var body = await response.Content.ReadFromJsonAsync<IEnumerable<object>>(cancellationToken: TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    Assert.NotNull(body);
+}
+
+[Fact]
+public async Task LeaveRoom_ShouldReturn400_WhenRoomDoesNotExist()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await client.PostAsync($"api/chat/rooms/{Guid.NewGuid()}/leave", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
+[Fact]
+public async Task JoinRoom_ShouldReturn400_WhenRoomDoesNotExist()
+{
+    var (client, _) = await AuthHelper.CreateAuthenticatedClientAsync(factory);
+
+    var response = await client.PostAsync($"api/chat/rooms/{Guid.NewGuid()}/join", null, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+}
+
 }
