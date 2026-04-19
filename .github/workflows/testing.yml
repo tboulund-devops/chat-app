@@ -152,4 +152,4 @@ jobs:
       - name: Run Performance Tests
         env:
           BASE_URL: ${{ env.SERVER_URL }}
-        run: k6 run server/Tests/performance/load-test.js
+        run: k6 run server/Tests/Performance/load-test.js
